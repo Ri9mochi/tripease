@@ -1,0 +1,21 @@
+<header class="main-header">
+  <div class="header-content">
+    <div class="header-left">
+      <% if user_signed_in? %>
+        <%= link_to "Tripease", root_path, class: "service-logo" %>
+      <% else %>
+        <%= link_to "Tripease", new_user_session_path, class: "service-logo" %>
+      <% end %>
+    </div>
+
+    <div class="header-right">
+      <% if user_signed_in? %>
+        <%= link_to "新しい旅行を計画する", "#", class: "header-link plan-link" %>
+        <%= link_to "ログアウト", destroy_user_session_path, data: { turbo_method: :delete }, class: "header-link" %>
+      <% else %>
+        <%= link_to "ログイン", new_user_session_path, class: "header-link" %>
+        <%= link_to "新規登録", new_user_registration_path, class: "header-link register-link" %>
+      <% end %>
+    </div>
+  </div>
+</header>
