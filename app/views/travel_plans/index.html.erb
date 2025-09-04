@@ -6,7 +6,7 @@
     <div class="welcome-section">
       <h2 class="welcome-message">こんにちは、<%= current_user.nickname %>さん！</h2>
       <p class="sub-message">次の旅行を計画しましょう。</p>
-      <%= link_to "新しい旅行を計画する", "#", class: "plan-button" %>
+      <%= link_to "新しい旅行を計画する", new_travel_plan_path, class: "plan-button" %>
     </div>
 
     <div class="my-plans-section">

@@ -1,0 +1,79 @@
+/* 画面分割のコンテナ */
+.split-screen-container {
+  display: flex;
+  height: calc(100vh - 80px); /* ヘッダーの高さを考慮して調整 */
+}
+
+/* 左右のパネル共通スタイル */
+.split-panel {
+  flex: 1; /* 親要素内で等しい幅を占める */
+  padding: 40px;
+  overflow-y: auto; /* コンテンツがはみ出た場合にスクロールを有効にする */
+}
+
+/* 左側のAI回答パネル */
+.left-panel {
+  background-color: #f0f2f5;
+  border-right: 1px solid #e0e0e0;
+}
+
+.ai-response-area {
+  padding: 20px;
+  text-align: center;
+}
+
+.ai-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 15px;
+}
+
+.ai-placeholder {
+  color: #777;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* 右側の入力フォームパネル */
+.right-panel {
+  background-color: #ffffff;
+}
+
+/* フォームのカードスタイル（以前の回答から流用） */
+.form-card {
+  box-shadow: none; /* 親パネルにシャドウがあるため削除 */
+  padding: 0;
+}
+
+.form-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 25px;
+}
+
+/* フォームの共通フィールドとボタンのスタイルは以前の回答から引き続き使用 */
+.field { margin-bottom: 20px; }
+.form-input, .form-textarea, .form-select-multiple {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+.form-input:focus, .form-textarea:focus, .form-select-multiple:focus { outline: none; border-color: #007bff; }
+.form-submit-button {
+  width: 100%;
+  padding: 15px;
+  border: none;
+  border-radius: 50px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.form-submit-button:hover { background-color: #0056b3; }

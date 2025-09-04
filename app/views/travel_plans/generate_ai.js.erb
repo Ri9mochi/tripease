@@ -1,0 +1,41 @@
+<%# app/views/travel_plans/generate_ai.js.erb %>
+
+<% if @ai_plans.blank? %>
+  document.getElementById('ai-response-area').innerHTML = `
+    <div class="ai-error-container">
+      <h2 class="ai-title">プラン生成に失敗しました</h2>
+      <p class="ai-placeholder">
+        AIによるプラン生成中にエラーが発生しました。<br>
+        時間を置いて再度お試しください。
+      </p>
+    </div>
+  `;
+<% else %>
+  document.getElementById('ai-response-area').innerHTML = `
+    <h2 class="ai-title">AIの旅行プラン提案</h2>
+    <div class="ai-plans-container">
+      <% @ai_plans.each_with_index do |plan, index| %>
+        <div class="ai-plan-card">
+          <div class="card-header">
+            <h3 class="plan-name"><%= plan["plan_name"] || "提案プラン#{index + 1}" %></h3>
+            <% if plan["itinerary"] %>
+              <span class="plan-days"><%= plan["itinerary"].length %>日間</span>
+            <% end %>
+          </div>
+          <div class="card-body">
+            <p><strong>概要:</strong> <%= plan["itinerary"].first["morning_activity"] rescue "" %> など</p>
+          </div>
+          <div class="card-footer">
+            <form action="/travel_plans" method="POST">
+              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+              <input type="hidden" name="travel_plan[name]" value="<%= plan["plan_name"] %>">
+              <input type="hidden" name="travel_plan[notes]" value="<%= plan["itinerary"].map{|d| d["place"] }.join("、") %>">
+              <input type="hidden" name="travel_plan[budget]" value="<%= params[:travel_plan][:budget] %>">
+              <button type="submit" class="select-plan-button">このプランを選択</button>
+            </form>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  `;
+<% end %>
