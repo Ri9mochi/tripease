@@ -1,0 +1,17 @@
+<%# _header.html.erb を読み込む %>
+<%= render "shared/header" %>
+
+<div class="main-content">
+  <div class="page-container">
+    <div class="welcome-section">
+      <h2 class="welcome-message">こんにちは、<%= current_user.nickname %>さん！</h2>
+      <p class="sub-message">次の旅行を計画しましょう。</p>
+      <%= link_to "新しい旅行を計画する", new_travel_plan_path, class: "plan-button" %>
+    </div>
+
+    <div class="my-plans-section">
+      <h3 class="section-title">あなたの旅行プラン</h3>
+
+    </div>
+  </div>
+</div>

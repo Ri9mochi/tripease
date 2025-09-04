@@ -1,21 +1,16 @@
-/* ベーススタイル */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: #f0f2f5;
-  color: #333;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
-}
 
 /* ログインコンテナ */
 .login-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+  margin: 0;
   width: 100%;
   max-width: 400px;
   padding: 20px;
   text-align: center;
+  margin: auto;
 }
 
 /* ヘッダーとロゴ */

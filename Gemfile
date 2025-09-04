@@ -72,3 +72,10 @@ group :production do
 end
 
 gem 'devise'
+
+
+gem "faraday"
+gem "json"
+
+
+gem 'dotenv-rails', groups: [:development, :test]
