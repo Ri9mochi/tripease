@@ -4,6 +4,7 @@ class TravelPlan < ApplicationRecord
   has_many :plan_days, dependent: :destroy
   has_many :plan_destinations, dependent: :destroy
   has_many :destinations, through: :plan_destinations
+  has_many :plan_items, through: :plan_days
 
   # Validations
   validates :name, presence: true, length: { maximum: 100 }
