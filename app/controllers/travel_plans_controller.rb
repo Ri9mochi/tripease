@@ -16,14 +16,28 @@ class TravelPlansController < ApplicationController
   end
 
   def create
-    @travel_plan = current_user.travel_plans.build(travel_plan_params)
-    @travel_plan.destination_ids = params[:travel_plan][:destination_ids] if params[:travel_plan][:destination_ids].present?
+    # AIプランからのデータがあるかチェック
+    itinerary_data = params[:itinerary_json]
 
-    if @travel_plan.save
-      redirect_to @travel_plan, notice: '旅行プランの作成に成功しました。'
+    if itinerary_data.present?
+      # AIプランのデータを使って新しいTravelPlanを作成
+      @travel_plan = current_user.travel_plans.build(
+        name: params[:name],
+        start_date: params[:start_date],
+        end_date: params[:end_date],
+        itinerary: JSON.parse(itinerary_data) # JSONをパースして保存
+      )
     else
-      @destinations = Destination.all.order(:name)
-      render :new, status: :unprocessable_entity
+      # 通常のフォームからの作成処理
+      @travel_plan = current_user.travel_plans.build(travel_plan_params)
+    end
+    
+    if @travel_plan.save
+      redirect_to authenticated_root_path, notice: '旅行プランがマイプランに保存されました。'
+    else
+      # エラーハンドリング
+      flash[:alert] = 'プランの保存に失敗しました。'
+      redirect_to new_travel_plan_path
     end
   end
 
@@ -31,31 +45,85 @@ class TravelPlansController < ApplicationController
     @travel_plan = TravelPlan.find(params[:id])
   end
 
+  def edit
+    @travel_plan = TravelPlan.find(params[:id])
+    @prefecture_groups = PrefectureGroup.all
+    @destinations = Destination.all.order(:name)
+  end
+
+  def update
+    @travel_plan = TravelPlan.find(params[:id])
+    if @travel_plan.update(travel_plan_params)
+      redirect_to @travel_plan, notice: '旅行プランが更新されました。'
+    else
+      @prefecture_groups = PrefectureGroup.all
+      @destinations = Destination.all.order(:name)
+      render :edit, status: :unprocessable_entity
+    end
+  end
+
+  def destroy
+    @travel_plan = TravelPlan.find(params[:id])
+    @travel_plan.destroy
+    redirect_to authenticated_root_path, notice: '旅行プランを削除しました。'
+  end
+
   def generate_ai
     tp_params = params.dig(:travel_plan) || {}
     destination_ids = tp_params[:destination_ids].to_a.compact_blank
-    destinations = Destination.where(id: destination_ids).pluck(:name).join(', ')
-    start_date   = tp_params[:start_date]
-    end_date     = tp_params[:end_date]
-    budget       = tp_params[:budget]
-    notes        = tp_params[:notes]
+    destinations_names = Destination.where(id: destination_ids).pluck(:name).join(', ')
+    start_date = tp_params[:start_date]
+    end_date = tp_params[:end_date]
+    budget = tp_params[:budget]
+    notes = tp_params[:notes]
+    
+    # 期間を計算
+    num_days = (Date.parse(end_date) - Date.parse(start_date)).to_i + 1
 
-    prompt_text = generate_prompt(destinations, start_date, end_date, budget, notes)
+    prompt_text = generate_prompt(destinations_names, start_date, end_date, budget, notes, num_days)
 
     begin
       @ai_plans = call_gemini_api(prompt_text)
+
+      cache_key = "ai_plans_for_user_#{current_user.id}"
+      Rails.cache.write(cache_key, @ai_plans, expires_in: 1.hour)
+
+      Rails.logger.debug("--- CACHE WRITE DEBUG ---")
+      Rails.logger.debug("Cache key: #{cache_key}")
+      Rails.logger.debug("Data written to cache: #{@ai_plans.inspect}")
+
       respond_to do |format|
         format.js { render 'generate_ai' }
       end
     rescue => e
       Rails.logger.error("AI生成エラー: #{e.message}")
-      render js: "alert('AIによるプラン生成中にエラーが発生しました。');"
+      render js: "alert('AIによるプラン生成中にエラーが発生しました。時間を置いて再度お試しください。');"
     end
   end
 
   def preview
-    plan_data_json = Base64.strict_decode64(params[:plan_data])
-    @ai_plan = JSON.parse(plan_data_json).with_indifferent_access
+    cache_key = "ai_plans_for_user_#{current_user.id}"
+    @ai_plans = Rails.cache.read(cache_key)
+
+    Rails.logger.debug("--- CACHE READ DEBUG ---")
+    Rails.logger.debug("Cache key: #{cache_key}")
+    Rails.logger.debug("Data read from cache: #{@ai_plans.inspect}")
+
+    unless @ai_plans.present?
+      flash[:error] = "プランデータが見つかりませんでした。もう一度プランを作成してください。"
+      redirect_to new_travel_plan_path
+      return
+    end
+
+    plan_index = params[:plan_index].to_i
+  
+    if plan_index < 0 || plan_index >= @ai_plans.length
+      flash[:error] = "指定されたプランが見つかりません。"
+      redirect_to new_travel_plan_path
+      return
+    end
+
+    @ai_plan = @ai_plans[plan_index]
   end
 
   private
@@ -64,7 +132,6 @@ class TravelPlansController < ApplicationController
     params.require(:travel_plan).permit(:name, :start_date, :end_date, :budget, :notes, destination_ids: [])
   end
 
-  # --- Google Gemini API呼び出し（Faraday版） ---
   def call_gemini_api(prompt_text)
     Rails.logger.debug("--- AI API呼び出し開始 ---")
 
@@ -113,51 +180,49 @@ class TravelPlansController < ApplicationController
     []
   end
 
-  # --- プロンプト生成 ---
-  def generate_prompt(destinations, start_date, end_date, budget, notes)
+  def generate_prompt(destinations_names, start_date, end_date, budget, notes, num_days)
     <<~PROMPT
-      あなたは旅行プランナーです。以下の条件に基づいて、旅行プランを必ず2案提案してください。
-      提案は日本語で行い、以下のJSON形式で厳密に返答してください。JSON以外の文章は一切含めないでください。
+      あなたは旅行プランを提案するAIアシスタントです。
+      ユーザーの旅行ニーズに基づいて、#{num_days}日間の旅行プランを2案提案してください。
 
-      条件：
-      - 行き先: #{destinations}
-      - 期間: #{start_date} から #{end_date}
-      - 予算: #{budget}円
-      - その他ニーズ: #{notes}
-
-      出力形式:
+      **出力形式の厳守:**
+      あなたの回答は、以下のJSON形式で出力してください。
+      ```json
       [
         {
-          "plan_name": "提案1のプラン名",
+          "plan_name": "提案プラン1のタイトル",
           "itinerary": [
             {
               "day": 1,
-              "date": "#{start_date}",
-              "place": "訪問地",
-              "morning_activity": "午前中の予定",
-              "lunch_restaurant": "昼食の場所",
-              "afternoon_activity": "午後の予定",
-              "dinner_restaurant": "夕食の場所",
-              "stay_hotel": "宿泊先"
-            }
+              "date": "YYYY-MM-DD",
+              "place": "行き先の地名",
+              "morning_activity": "午前の活動内容",
+              "lunch_restaurant": "昼食の店名",
+              "lunch_restaurant_url": "昼食の予約URL（例: 食べログ、公式HPなど）",
+              "afternoon_activity": "午後の活動内容",
+              "dinner_restaurant": "夕食の店名",
+              "dinner_restaurant_url": "夕食の予約URL（例: 食べログ、公式HPなど）",
+              "stay_hotel": "宿泊ホテルの具体的な名前",
+              "stay_hotel_url": "宿泊ホテルの予約URL（例: 楽天トラベル、公式HPなど）"
+            },
+            // ... 2日目以降のデータ ...
           ]
         },
-        {
-          "plan_name": "提案2のプラン名",
-          "itinerary": [
-            {
-              "day": 1,
-              "date": "#{start_date}",
-              "place": "訪問地",
-              "morning_activity": "午前中の予定",
-              "lunch_restaurant": "昼食の場所",
-              "afternoon_activity": "午後の予定",
-              "dinner_restaurant": "夕食の場所",
-              "stay_hotel": "宿泊先"
-            }
-          ]
-        }
+        // ... 2案目のデータ ...
       ]
+      ```
+
+      **追加の要望:**
+      - **レストランとホテルは具体的な店名・ホテル名を提案し、その予約URL（例: 楽天トラベル、じゃらん、食べログ、公式ホームページなど）も必ず含めてください。**
+      - AIがURLを生成できない場合は、URLフィールドを空の文字列にしてください。
+      - ユーザーの希望に沿った、魅力的なプランを提案してください。
+
+      **ユーザーの旅行情報:**
+      - 旅行名: #{travel_plan_params[:name]}
+      - 行き先: #{destinations_names}
+      - 期間: #{start_date} から #{end_date} までの#{num_days}日間
+      - 予算: #{budget}円
+      - その他ニーズ: #{notes}
     PROMPT
   end
 end

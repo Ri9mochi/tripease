@@ -1,4 +1,3 @@
-<%# _header.html.erb を読み込む %>
 <%= render "shared/header" %>
 
 <div class="main-content">
@@ -12,6 +11,20 @@
     <div class="my-plans-section">
       <h3 class="section-title">あなたの旅行プラン</h3>
 
+      <div class="my-plans-list">
+        <% if @travel_plans.empty? %>
+          <p class="no-plans-message">まだ旅行プランがありません。</p>
+        <% else %>
+          <% @travel_plans.each do |plan| %>
+            <div class="my-plan-card">
+              <h4><%= plan.name %></h4>
+              <p>期間: <%= plan.start_date %> から <%= plan.end_date %></p>
+              <%# プランの詳細ページへのリンクを追加 %>
+              <%= link_to "詳細を見る", travel_plan_path(plan), class: "view-details-button" %>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
     </div>
   </div>
 </div>

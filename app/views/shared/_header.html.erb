@@ -10,7 +10,7 @@
 
     <div class="header-right">
       <% if user_signed_in? %>
-        <%= link_to "新しい旅行を計画する", "#", class: "header-link plan-link" %>
+        <%= link_to "新しい旅行を計画する", new_travel_plan_path, class: "header-link plan-link" %>
         <%= link_to "ログアウト", destroy_user_session_path, data: { turbo_method: :delete }, class: "header-link" %>
       <% else %>
         <%= link_to "ログイン", new_user_session_path, class: "header-link" %>
