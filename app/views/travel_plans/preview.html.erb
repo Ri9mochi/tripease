@@ -1,0 +1,44 @@
+<div class="itinerary-container">
+  <% @ai_plan["itinerary"].each do |day| %>
+    <div class="itinerary-day-card">
+      <h3 class="day-title">Day <%= day["day"] %>: <%= day["date"] %></h3>
+      <ul class="activity-list">
+        <li><strong>場所:</strong> <%= day["place"] %></li>
+        <li><strong>午前:</strong> <%= day["morning_activity"] %></li>
+        <li>
+          <strong>昼食:</strong>
+          <%= day["lunch_restaurant"] %>
+          <% if day["lunch_restaurant_url"].present? %>
+            <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+          <% end %>
+        </li>
+        <li><strong>午後:</strong> <%= day["afternoon_activity"] %></li>
+        <li>
+          <strong>夕食:</strong>
+          <%= day["dinner_restaurant"] %>
+          <% if day["dinner_restaurant_url"].present? %>
+            <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+          <% end %>
+        </li>
+        <li>
+          <strong>宿泊:</strong>
+          <%= day["stay_hotel"] %>
+          <% if day["stay_hotel_url"].present? %>
+            <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+          <% end %>
+        </li>
+      </ul>
+    </div>
+  <% end %>
+</div>
+
+<div class="plan-actions">
+  <%= form_with(url: travel_plans_path, method: :post, local: true) do %>
+    <%= hidden_field_tag 'name', @ai_plan["plan_name"] %>
+    <%= hidden_field_tag 'start_date', @ai_plan["itinerary"].first["date"] %>
+    <%= hidden_field_tag 'end_date', @ai_plan["itinerary"].last["date"] %>
+    <%= hidden_field_tag 'itinerary_json', @ai_plan["itinerary"].to_json %>
+    
+    <%= submit_tag "このプランを登録", class: "plan-decide-button" %>
+  <% end %>
+</div>

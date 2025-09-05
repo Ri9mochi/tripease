@@ -1,0 +1,43 @@
+<%# app/views/travel_plans/show.html.erb %>
+<div class="itinerary-container">
+  <% if @travel_plan.itinerary.present? %>
+    <% @travel_plan.itinerary.each do |day| %>
+      <div class="itinerary-day-card">
+        <h3 class="day-title">Day <%= day["day"] %>: <%= day["date"] %></h3>
+        <ul class="activity-list">
+          <li><strong>場所:</strong> <%= day["place"] %></li>
+          <li><strong>午前:</strong> <%= day["morning_activity"] %></li>
+          <li>
+            <strong>昼食:</strong>
+            <%= day["lunch_restaurant"] %>
+            <% if day["lunch_restaurant_url"].present? %>
+              <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+            <% end %>
+          </li>
+          <li><strong>午後:</strong> <%= day["afternoon_activity"] %></li>
+          <li>
+            <strong>夕食:</strong>
+            <%= day["dinner_restaurant"] %>
+            <% if day["dinner_restaurant_url"].present? %>
+              <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+            <% end %>
+          </li>
+          <li>
+            <strong>宿泊:</strong>
+            <%= day["stay_hotel"] %>
+            <% if day["stay_hotel_url"].present? %>
+              <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+    <% end %>
+  <% else %>
+    <p>旅程データがありません。</p>
+  <% end %>
+</div>
+
+<div class="plan-actions-show">
+  <%= link_to "プランを編集", edit_travel_plan_path(@travel_plan), class: "edit-plan-button" %>
+  <%= link_to "プランを削除", @travel_plan, method: :delete, data: { confirm: "本当にこのプランを削除しますか？" }, class: "delete-plan-button" %>
+</div>

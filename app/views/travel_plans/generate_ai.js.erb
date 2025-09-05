@@ -23,16 +23,14 @@
             <% end %>
           </div>
           <div class="card-body">
+            <%# ここを修正します %>
+            <p><strong>行き先:</strong> <%= plan["itinerary"].map { |day| day["place"] }.compact.join('、') %></p>
+            <p><strong>期間:</strong> <%= plan["itinerary"].first["date"] rescue "" %> 〜 <%= plan["itinerary"].last["date"] rescue "" %></p>
+            <p><strong>予算:</strong> <%= params.dig(:travel_plan, :budget) %>円</p>
             <p><strong>概要:</strong> <%= plan["itinerary"].first["morning_activity"] rescue "" %> など</p>
           </div>
           <div class="card-footer">
-            <form action="/travel_plans" method="POST">
-              <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-              <input type="hidden" name="travel_plan[name]" value="<%= plan["plan_name"] %>">
-              <input type="hidden" name="travel_plan[notes]" value="<%= plan["itinerary"].map{|d| d["place"] }.join("、") %>">
-              <input type="hidden" name="travel_plan[budget]" value="<%= params[:travel_plan][:budget] %>">
-              <button type="submit" class="select-plan-button">このプランを選択</button>
-            </form>
+            <a href="/travel_plans/preview?plan_index=<%= index %>" class="select-plan-button">詳細を見る</a>
           </div>
         </div>
       <% end %>

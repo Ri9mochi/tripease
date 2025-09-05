@@ -9,13 +9,10 @@ Rails.application.routes.draw do
     root to: 'devise/sessions#new'
   end
 
-  resources :travel_plans, only: [:index, :new, :create, :show] do
+  resources :travel_plans, only: [:index, :new, :create, :show, :edit, :update, :destroy] do
     collection do
-      post :generate_ai  # AjaxでAIプランを生成
+      post :generate_ai
+      get :preview
     end
-    member do
-      get :preview # 新しいルートを追加
-    end
-    
   end
 end

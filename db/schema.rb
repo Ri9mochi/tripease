@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_01_084412) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_04_030736) do
   create_table "destinations", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "prefecture_group_id", null: false
     t.string "name", null: false
@@ -45,6 +45,7 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_01_084412) do
     t.string "status", default: "draft"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.json "itinerary"
     t.index ["user_id"], name: "index_travel_plans_on_user_id"
   end
 
