@@ -1,10 +1,12 @@
 // app/javascript/controllers/index.js
 
-import { application } from "./application"
+// import { application } from "./application" は不要
+// 代わりに@hotwired/stimulus-loadingからインポート
+import { Application } from "@hotwired/stimulus"
 import { eagerLoadControllersFrom } from "@hotwired/stimulus-loading"
 
-// eagerLoadControllersFrom("controllers", application)をコメントアウトまたは削除し、
-// Stimulusコントローラーをまとめて読み込むように修正します。
+// Stimulusアプリケーションを初期化
+const application = Application.start()
 
-// Stimulusコントローラーを自動的に読み込む
+// controllersディレクトリ内の全てのコントローラーを自動的に読み込む
 eagerLoadControllersFrom("controllers", application)
