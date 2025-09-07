@@ -43,7 +43,7 @@
             <!-- 都道府県のチェックボックス -->
             <div id="destination-checkboxes">
               <% @destinations.each do |destination| %>
-                <div data-destination-filter-target="destination" data-prefecture-group="<%= destination.prefecture_group_id %>" style="display:none;">
+                <div data-destination-filter-target="destination" data-prefecture-group="<%= destination.prefecture_group_id %>">
                   <%= f.check_box :destination_ids, { multiple: true }, destination.id, nil %>
                   <%= destination.name %>
                 </div>
