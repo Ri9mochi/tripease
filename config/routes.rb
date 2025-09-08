@@ -15,4 +15,9 @@ Rails.application.routes.draw do
       get :preview
     end
   end
+  # ▼▼▼ 一時的 seed 実行ルート（必ずあとで削除！） ▼▼▼
+  if Rails.env.production?
+    get "/__seed_once" => "seeds#run"
+  end
+  # ▲▲▲
 end

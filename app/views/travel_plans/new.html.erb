@@ -80,15 +80,16 @@
 </div>
 
 <!-- ▼▼▼ デバッグ: 後で必ず削除してください ▼▼▼ -->
-<div style="display:none" id="debug-data">
+<!-- 一時的に見えるように -->
+<div id="debug-data" style="padding:8px;background:#fff3cd;border:1px solid #ffeeba;margin-top:12px">
   groups=<%= PrefectureGroup.count %>,
   dests=<%= Destination.count %>,
   with_group=<%= Destination.where.not(prefecture_group_id: nil).count %>
 </div>
-
-<ul style="display:none">
+<ul>
   <% Destination.limit(5).each do |d| %>
     <li><%= "#{d.name} (group_id=#{d.prefecture_group_id})" %></li>
   <% end %>
 </ul>
+
 <!-- ▲▲▲ デバッグ: 後で必ず削除してください ▲▲▲ -->
