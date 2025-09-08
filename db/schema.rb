@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_04_030736) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_08_054937) do
   create_table "destinations", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "prefecture_group_id", null: false
     t.string "name", null: false

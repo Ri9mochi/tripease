@@ -42,7 +42,7 @@
           <!-- 都道府県のチェックボックス -->
           <div id="destination-checkboxes">
             <% @destinations.each do |destination| %>
-              <div data-prefecture-group="<%= destination.prefecture_group_id %>">
+              <div class="destination-item" data-prefecture-group="<%= destination.prefecture_group_id %>">
                 <%= f.check_box :destination_ids, { multiple: true }, destination.id, nil %>
                 <%= destination.name %>
               </div>
@@ -78,18 +78,3 @@
     </div>
   </div>
 </div>
-
-<!-- ▼▼▼ デバッグ: 後で必ず削除してください ▼▼▼ -->
-<!-- 一時的に見えるように -->
-<div id="debug-data" style="padding:8px;background:#fff3cd;border:1px solid #ffeeba;margin-top:12px">
-  groups=<%= PrefectureGroup.count %>,
-  dests=<%= Destination.count %>,
-  with_group=<%= Destination.where.not(prefecture_group_id: nil).count %>
-</div>
-<ul>
-  <% Destination.limit(5).each do |d| %>
-    <li><%= "#{d.name} (group_id=#{d.prefecture_group_id})" %></li>
-  <% end %>
-</ul>
-
-<!-- ▲▲▲ デバッグ: 後で必ず削除してください ▲▲▲ -->
