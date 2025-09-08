@@ -1,13 +1,14 @@
 {
   "imports": {
-    "application": "/assets/application-c24b81e0d476976c264937ec2a7d6c390b5cf9af5e4bba145763452969a47388.js",
+    "application": "/assets/application-80aa74f93374da0862cc02aac79a867268ba534838a3e4c2d02a5b99b8111945.js",
     "@hotwired/turbo-rails": "/assets/turbo.min-38d030897e3554a265d3a3b6bdf4fb7509b08197ba2b6e3761683c07e776c1bc.js",
     "@hotwired/stimulus": "/assets/stimulus.min-dd364f16ec9504dfb72672295637a1c8838773b01c0b441bd41008124c407894.js",
     "@hotwired/stimulus-loading": "/assets/stimulus-loading-3576ce92b149ad5d6959438c6f291e2426c86df3b874c525b30faad51b0d96b3.js",
     "@rails/ujs": "/assets/@rails--ujs-b0c568d5492ca5b6af4f022bd3b3f96dfd566287f1e0b78c55ea1fc125ee46ab.js",
+    "destination_filter": "/assets/destination_filter-bedd7b458c6fe1310c42260aad261461d4fcfe509f13ce0100867b7387f55e88.js",
     "controllers/application": "/assets/controllers/application-368d98631bccbf2349e0d4f8269afb3fe9625118341966de054759d96ea86c7e.js",
-    "controllers/destination_filter_controller": "/assets/controllers/destination_filter_controller-74fe934af5033075e81159d9eb62f6ab85bfb7f893c857001b2539a0ea37e801.js",
+    "controllers/destination_filter_controller": "/assets/controllers/destination_filter_controller-b6c2a854422304a8509ff93300835b400c715fec30e365d404790bf203080f50.js",
     "controllers/hello_controller": "/assets/controllers/hello_controller-549135e8e7c683a538c3d6d517339ba470fcfb79d62f738a0a089ba41851a554.js",
-    "controllers": "/assets/controllers/index-c701117f83d9070dcc68779278a6d20936bbf1368b935b83b9614e0e0e2f0b81.js"
+    "controllers": "/assets/controllers/index-8f18d89c8745e8a54358597064618ed54fc5fa20339773b557f3fa374b478088.js"
   }
 }
