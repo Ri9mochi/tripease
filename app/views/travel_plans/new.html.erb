@@ -32,23 +32,22 @@
           <%= f.label :destination_ids, "行き先（複数選択可）" %><br />
 
           <div data-controller="destination-filter">
-            <!-- 地方の選択 -->
-            <select data-destination-filter-target="groupSelect" data-action="change->destination-filter#update" class="form-input">
-              <option value="">地方を選択してください</option>
-              <% @prefecture_groups.each do |group| %>
-                <option value="<%= group.id %>"><%= group.name %></option>
-              <% end %>
-            </select>
+           <!-- 地方の選択 -->
+          <select data-group-select class="form-input">
+            <option value="">地方を選択してください</option>
+            <% @prefecture_groups.each do |group| %>
+              <option value="<%= group.id %>"><%= group.name %></option>
+            <% end %>
+          </select>
 
-            <!-- 都道府県のチェックボックス -->
-            <div id="destination-checkboxes">
-              <% @destinations.each do |destination| %>
-                <div data-destination-filter-target="destination" data-prefecture-group="<%= destination.prefecture_group_id %>">
-                  <%= f.check_box :destination_ids, { multiple: true }, destination.id, nil %>
-                  <%= destination.name %>
-                </div>
-              <% end %>
-            </div>
+          <!-- 都道府県のチェックボックス -->
+          <div id="destination-checkboxes">
+            <% @destinations.each do |destination| %>
+              <div data-prefecture-group="<%= destination.prefecture_group_id %>">
+                <%= f.check_box :destination_ids, { multiple: true }, destination.id, nil %>
+                <%= destination.name %>
+              </div>
+            <% end %>
           </div>
         </div>
 
