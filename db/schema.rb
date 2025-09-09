@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_08_054937) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_09_032909) do
   create_table "destinations", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "prefecture_group_id", null: false
     t.string "name", null: false
@@ -46,7 +46,17 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_08_054937) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.json "itinerary"
+    t.bigint "travel_purpose_id"
+    t.index ["travel_purpose_id"], name: "index_travel_plans_on_travel_purpose_id"
     t.index ["user_id"], name: "index_travel_plans_on_user_id"
+  end
+
+  create_table "travel_purposes", charset: "utf8mb3", force: :cascade do |t|
+    t.string "name", null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_travel_purposes_on_name", unique: true
   end
 
   create_table "users", charset: "utf8mb3", force: :cascade do |t|
@@ -67,5 +77,6 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_08_054937) do
   add_foreign_key "destinations", "prefecture_groups"
   add_foreign_key "plan_destinations", "destinations"
   add_foreign_key "plan_destinations", "travel_plans"
+  add_foreign_key "travel_plans", "travel_purposes"
   add_foreign_key "travel_plans", "users"
 end

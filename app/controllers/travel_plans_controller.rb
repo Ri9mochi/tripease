@@ -1,4 +1,3 @@
-# app/controllers/travel_plans_controller.rb
 require 'faraday'
 require 'json'
 require 'net/http'
@@ -6,13 +5,15 @@ require 'uri'
 
 class TravelPlansController < ApplicationController
   def index
-    @travel_plans = current_user.travel_plans
+    # 目的名のN+1回避（お好みで）
+    @travel_plans = current_user.travel_plans.includes(:travel_purpose)
   end
 
   def new
     @travel_plan = TravelPlan.new
     @prefecture_groups = PrefectureGroup.all
     @destinations = Destination.all.order(:name)
+    @travel_purposes = TravelPurpose.order(:position, :id)  # ← 追加
   end
 
   def create
@@ -20,24 +21,33 @@ class TravelPlansController < ApplicationController
     itinerary_data = params[:itinerary_json]
 
     if itinerary_data.present?
-      # AIプランのデータを使って新しいTravelPlanを作成
+      # フォームから目的IDも受け取る
+      tp = params.fetch(:travel_plan, {}).permit(:travel_purpose_id, :budget, :notes)
+
       @travel_plan = current_user.travel_plans.build(
-        name: params[:name],
+        name:       params[:name],
         start_date: params[:start_date],
-        end_date: params[:end_date],
-        itinerary: JSON.parse(itinerary_data) # JSONをパースして保存
+        end_date:   params[:end_date],
+        itinerary:  JSON.parse(itinerary_data),
+        travel_purpose_id: tp[:travel_purpose_id]               # ← 追加
       )
+      # 予算やメモもAI経由で保持したい場合は下記も付けられます
+      @travel_plan.budget = tp[:budget] if tp[:budget].present?
+      @travel_plan.notes  = tp[:notes]  if tp[:notes].present?
     else
-      # 通常のフォームからの作成処理
+      # 通常のフォームからの作成処理（目的ID・行き先を許可済み）
       @travel_plan = current_user.travel_plans.build(travel_plan_params)
     end
     
     if @travel_plan.save
       redirect_to authenticated_root_path, notice: '旅行プランがマイプランに保存されました。'
     else
-      # エラーハンドリング
       flash[:alert] = 'プランの保存に失敗しました。'
-      redirect_to new_travel_plan_path
+      # newの再表示に必要なマスタを再ロード
+      @prefecture_groups = PrefectureGroup.all
+      @destinations = Destination.all.order(:name)
+      @travel_purposes = TravelPurpose.order(:position, :id)
+      render :new, status: :unprocessable_entity
     end
   end
 
@@ -49,6 +59,7 @@ class TravelPlansController < ApplicationController
     @travel_plan = TravelPlan.find(params[:id])
     @prefecture_groups = PrefectureGroup.all
     @destinations = Destination.all.order(:name)
+    @travel_purposes = TravelPurpose.order(:position, :id)  # ← 追加
   end
 
   def update
@@ -58,6 +69,7 @@ class TravelPlansController < ApplicationController
     else
       @prefecture_groups = PrefectureGroup.all
       @destinations = Destination.all.order(:name)
+      @travel_purposes = TravelPurpose.order(:position, :id)  # ← 追加
       render :edit, status: :unprocessable_entity
     end
   end
@@ -77,8 +89,12 @@ class TravelPlansController < ApplicationController
     budget = tp_params[:budget]
     notes = tp_params[:notes]
     
-    # 期間を計算
-    num_days = (Date.parse(end_date) - Date.parse(start_date)).to_i + 1
+    # 期間を計算（nilガード）
+    if start_date.present? && end_date.present?
+      num_days = (Date.parse(end_date) - Date.parse(start_date)).to_i + 1
+    else
+      num_days = 1
+    end
 
     prompt_text = generate_prompt(destinations_names, start_date, end_date, budget, notes, num_days)
 
@@ -87,10 +103,6 @@ class TravelPlansController < ApplicationController
 
       cache_key = "ai_plans_for_user_#{current_user.id}"
       Rails.cache.write(cache_key, @ai_plans, expires_in: 1.hour)
-
-      Rails.logger.debug("--- CACHE WRITE DEBUG ---")
-      Rails.logger.debug("Cache key: #{cache_key}")
-      Rails.logger.debug("Data written to cache: #{@ai_plans.inspect}")
 
       respond_to do |format|
         format.js { render 'generate_ai' }
@@ -104,10 +116,6 @@ class TravelPlansController < ApplicationController
   def preview
     cache_key = "ai_plans_for_user_#{current_user.id}"
     @ai_plans = Rails.cache.read(cache_key)
-
-    Rails.logger.debug("--- CACHE READ DEBUG ---")
-    Rails.logger.debug("Cache key: #{cache_key}")
-    Rails.logger.debug("Data read from cache: #{@ai_plans.inspect}")
 
     unless @ai_plans.present?
       flash[:error] = "プランデータが見つかりませんでした。もう一度プランを作成してください。"
@@ -129,7 +137,11 @@ class TravelPlansController < ApplicationController
   private
 
   def travel_plan_params
-    params.require(:travel_plan).permit(:name, :start_date, :end_date, :budget, :notes, destination_ids: [])
+    params.require(:travel_plan).permit(
+      :name, :start_date, :end_date, :budget, :notes, :status,
+      :travel_purpose_id,           # ← 追加：目的を受け取る
+      destination_ids: []           # 既存：行き先（多対多）
+    )
   end
 
   def call_gemini_api(prompt_text)

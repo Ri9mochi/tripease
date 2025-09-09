@@ -24,8 +24,11 @@
           ) do |f| %>
 
         <div class="field">
-          <%= f.label :name, "プラン名" %><br />
-          <%= f.text_field :name, class: "form-input", placeholder: "例：京都の紅葉を満喫する旅" %>
+          <%= f.label :travel_purpose_id, "旅行の目的" %><br />
+          <%= f.collection_select :travel_purpose_id,
+                @travel_purposes, :id, :name,
+                { include_blank: "目的を選択してください" },
+                { class: "form-input" } %>
         </div>
 
         <div class="field">
