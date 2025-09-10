@@ -26,7 +26,7 @@
             <%# ここを修正します %>
             <p><strong>行き先:</strong> <%= plan["itinerary"].map { |day| day["place"] }.compact.join('、') %></p>
             <p><strong>期間:</strong> <%= plan["itinerary"].first["date"] rescue "" %> 〜 <%= plan["itinerary"].last["date"] rescue "" %></p>
-            <p><strong>予算:</strong> <%= params.dig(:travel_plan, :budget) %>円</p>
+            <p><strong>総予算:</strong> <%= params.dig(:travel_plan, :budget) %>円</p>
             <p><strong>概要:</strong> <%= plan["itinerary"].first["morning_activity"] rescue "" %> など</p>
           </div>
           <div class="card-footer">

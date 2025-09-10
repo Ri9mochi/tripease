@@ -24,8 +24,11 @@
           ) do |f| %>
 
         <div class="field">
-          <%= f.label :name, "プラン名" %><br />
-          <%= f.text_field :name, class: "form-input", placeholder: "例：京都の紅葉を満喫する旅" %>
+          <%= f.label :travel_purpose_id, "旅行の目的" %><br />
+          <%= f.collection_select :travel_purpose_id,
+                @travel_purposes, :id, :name,
+                { include_blank: "目的を選択してください" },
+                { class: "form-input" } %>
         </div>
 
         <div class="field">
@@ -61,13 +64,13 @@
         </div>
 
         <div class="field">
-          <%= f.label :budget, "予算（目安）" %><br />
+          <%= f.label :budget, "総予算（目安）" %><br />
           <%= f.number_field :budget, class: "form-input", placeholder: "例：50000" %>
         </div>
 
         <div class="field">
-          <%= f.label :notes, "その他ニーズ（AIに伝えたいこと）" %><br />
-          <%= f.text_area :notes, class: "form-textarea", placeholder: "例：温泉宿に泊まりたい、歴史的な場所を巡りたい" %>
+          <%= f.label :notes, "その他AIに伝えたいこと（人数やその他ニーズ）" %><br />
+          <%= f.text_area :notes, class: "form-textarea", placeholder: "例：家族3名、温泉宿に泊まりたい、歴史的な場所を巡りたい" %>
         </div>
 
         <div class="actions">

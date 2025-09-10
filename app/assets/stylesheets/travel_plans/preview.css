@@ -1,124 +1,207 @@
-/* trip.com風デザイン - プランプレビュー画面 */
-
-/* ページ全体のコンテナ */
+/* ====== Layout ====== */
 .page-container {
-  max-width: 960px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 30px;
+  padding: 28px 20px 40px;
+  background: #f7f9fb; /* 淡いグレー寄りブルー背景（Trip.comっぽい） */
 }
 
-/* ページタイトルとサマリー */
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #007bff;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.plan-summary {
-  font-size: 16px;
-  color: #555;
-  text-align: center;
-  margin-bottom: 40px;
-}
-
-/* 旅程コンテナ */
-.itinerary-container {
+/* ====== Header ====== */
+.plan-header {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-/* 日ごとのカード */
-.itinerary-day-card {
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-  padding: 25px;
-  transition: transform 0.3s ease;
-}
-
-.itinerary-day-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
-}
-
-.day-title {
-  font-size: 22px;
-  font-weight: 700;
-  color: #2c3e50;
-  border-bottom: 2px solid #e9eef2;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
-}
-
-/* アクティビティリスト */
-.activity-list {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.activity-list li {
-  font-size: 16px;
-  color: #333;
-  line-height: 1.6;
-  padding: 8px 0;
-  border-bottom: 1px dashed #e9eef2;
-}
-
-.activity-list li:last-child {
-  border-bottom: none;
-}
-
-.activity-list strong {
-  color: #007bff;
-  font-weight: 600;
-  min-width: 80px; /* ラベルの幅を揃える */
-  display: inline-block;
-}
-
-/* 予約リンクのスタイル */
-.reservation-link {
-  font-size: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 22px;
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0a7bff 0%, #0a61ff 60%, #0a48ff 100%);
   color: #fff;
-  background-color: #ff6a00; /* trip.comのオレンジ色 */
-  padding: 4px 10px;
-  border-radius: 20px;
+  box-shadow: 0 6px 18px rgba(10, 97, 255, 0.25);
+}
+
+.plan-header-left {
+  display: grid;
+  gap: 6px;
+}
+
+.plan-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.plan-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.meta-badge {
+  display: inline-block;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: saturate(120%) blur(2px);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+}
+
+.meta-badge.meta-place::before {
+  content: "📍";
+  margin-right: 4px;
+}
+
+.plan-header-right {
+  display: flex;
+  align-items: center;
+}
+
+/* ====== Back Button (reuse) ====== */
+.preview-back-button {
+  display: inline-block;
+  background: #ffffff;
+  color: #0a61ff;
+  padding: 10px 18px;
+  border-radius: 999px;
   text-decoration: none;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
-  margin-left: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  border: 1px solid #cfe0ff;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(10, 97, 255, 0.12);
+}
+.preview-back-button:hover {
+  background: #f4f8ff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(10, 97, 255, 0.18);
 }
 
+/* ====== Itinerary List ====== */
+.itinerary-container {
+  display: grid;
+  gap: 18px;
+}
+
+/* Day Card */
+.itinerary-day-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 6px 18px rgba(0, 34, 77, 0.06);
+  border: 1px solid #e8eef7;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.itinerary-day-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 34, 77, 0.08);
+}
+
+/* Day Title */
+.day-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #17324d;
+  padding-bottom: 10px;
+  margin: 0 0 10px;
+  border-bottom: 2px solid #eef3fa;
+}
+
+/* Activity List */
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.activity-list li {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px dashed #eef3fa;
+}
+.activity-list li:last-child {
+  border-bottom: 0;
+}
+
+/* Label / Body */
+.activity-label {
+  color: #0a61ff;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+.activity-body {
+  color: #1d2a36;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Reservation Link (reuse) */
+.reservation-link {
+  display: inline-block;
+  font-size: 12px;
+  color: #fff;
+  background-color: #ff7a1a;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 800;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(255, 122, 26, 0.25);
+}
 .reservation-link:hover {
-  background-color: #e55c00;
+  background-color: #e86d13;
+  transform: translateY(-1px);
 }
 
-/* プラン決定ボタンのコンテナ */
+/* ====== Actions ====== */
 .plan-actions {
   text-align: center;
-  margin-top: 40px;
+  margin-top: 22px;
 }
 
 .plan-decide-button {
   display: inline-block;
-  background-color: #007bff;
+  background: linear-gradient(135deg, #0a7bff 0%, #0a61ff 100%);
   color: #fff;
-  padding: 15px 30px;
-  border-radius: 50px;
+  padding: 14px 28px;
+  border-radius: 999px;
   text-decoration: none;
-  font-weight: 600;
-  letter-spacing: 1px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
   border: none;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 22px rgba(10, 97, 255, 0.25);
+}
+.plan-decide-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(10, 97, 255, 0.33);
 }
 
-.plan-decide-button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.3);
+/* ====== Responsive ====== */
+@media (max-width: 720px) {
+  .plan-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .activity-list li {
+    grid-template-columns: 88px 1fr;
+  }
+  .plan-title {
+    font-size: 20px;
+  }
 }
+
+/* ====== （あなたの既存CSSの核は引き継ぎつつ上書き） ====== */
+/* 既存 .itinerary-container / .itinerary-day-card / .reservation-link / .plan-actions 等は
+   同名クラスで上書き＆増強しています。 */

@@ -1,44 +1,110 @@
-<div class="itinerary-container">
-  <% @ai_plan["itinerary"].each do |day| %>
-    <div class="itinerary-day-card">
-      <h3 class="day-title">Day <%= day["day"] %>: <%= day["date"] %></h3>
-      <ul class="activity-list">
-        <li><strong>場所:</strong> <%= day["place"] %></li>
-        <li><strong>午前:</strong> <%= day["morning_activity"] %></li>
-        <li>
-          <strong>昼食:</strong>
-          <%= day["lunch_restaurant"] %>
-          <% if day["lunch_restaurant_url"].present? %>
-            <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-          <% end %>
-        </li>
-        <li><strong>午後:</strong> <%= day["afternoon_activity"] %></li>
-        <li>
-          <strong>夕食:</strong>
-          <%= day["dinner_restaurant"] %>
-          <% if day["dinner_restaurant_url"].present? %>
-            <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-          <% end %>
-        </li>
-        <li>
-          <strong>宿泊:</strong>
-          <%= day["stay_hotel"] %>
-          <% if day["stay_hotel_url"].present? %>
-            <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-          <% end %>
-        </li>
-      </ul>
-    </div>
-  <% end %>
-</div>
+<%# app/views/travel_plans/preview.html.erb %>
 
-<div class="plan-actions">
-  <%= form_with(url: travel_plans_path, method: :post, local: true) do %>
-    <%= hidden_field_tag 'name', @ai_plan["plan_name"] %>
-    <%= hidden_field_tag 'start_date', @ai_plan["itinerary"].first["date"] %>
-    <%= hidden_field_tag 'end_date', @ai_plan["itinerary"].last["date"] %>
-    <%= hidden_field_tag 'itinerary_json', @ai_plan["itinerary"].to_json %>
-    
-    <%= submit_tag "このプランを登録", class: "plan-decide-button" %>
-  <% end %>
+<%# このページだけ preview.css を読む %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "travel_plans/preview", media: "all", "data-turbo-track": "reload" %>
+<% end %>
+
+<div class="page-container">
+  <header class="plan-header">
+    <div class="plan-header-left">
+      <h2 class="plan-title"><%= (@ai_plan["plan_name"] || "AI提案プラン").to_s %></h2>
+      <div class="plan-meta">
+        <% first = Array(@ai_plan["itinerary"]).first %>
+        <% last  = Array(@ai_plan["itinerary"]).last %>
+        <span class="meta-badge"><%= first.try(:[], "date").to_s %> 〜 <%= last.try(:[], "date").to_s %></span>
+        <% places = Array(@ai_plan["itinerary"]).map{|d| d["place"]}.compact.uniq.join("・") %>
+        <% if places.present? %>
+          <span class="meta-badge meta-place"><%= places %></span>
+        <% end %>
+      </div>
+    </div>
+    <div class="plan-header-right">
+      <%= link_to "条件入力に戻る", new_travel_plan_path, class: "preview-back-button" %>
+    </div>
+  </header>
+
+  <section class="itinerary-container">
+    <% Array(@ai_plan["itinerary"]).each do |day| %>
+      <article class="itinerary-day-card">
+        <h3 class="day-title">
+          Day <%= day["day"].presence || "-" %>：<%= (day["date"] || "").to_s %>
+        </h3>
+
+        <ul class="activity-list">
+          <li>
+            <span class="activity-label">場所</span>
+            <span class="activity-body"><%= (day["place"].presence || "（未設定）").to_s %></span>
+          </li>
+
+          <li>
+            <span class="activity-label">朝食</span>
+            <span class="activity-body">
+              <%= (day["breakfast_restaurant"].presence || "（未設定）").to_s %>
+              <% if day["breakfast_restaurant_url"].present? %>
+                <%= link_to "予約", day["breakfast_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+              <% end %>
+            </span>
+          </li>
+
+          <li>
+            <span class="activity-label">午前</span>
+            <span class="activity-body"><%= (day["morning_activity"].presence || "（未設定）").to_s %></span>
+          </li>
+
+          <li>
+            <span class="activity-label">昼食</span>
+            <span class="activity-body">
+              <%= (day["lunch_restaurant"].presence || "（未設定）").to_s %>
+              <% if day["lunch_restaurant_url"].present? %>
+                <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+              <% end %>
+            </span>
+          </li>
+
+          <li>
+            <span class="activity-label">午後</span>
+            <span class="activity-body"><%= (day["afternoon_activity"].presence || "（未設定）").to_s %></span>
+          </li>
+
+          <li>
+            <span class="activity-label">夕食</span>
+            <span class="activity-body">
+              <%= (day["dinner_restaurant"].presence || "（未設定）").to_s %>
+              <% if day["dinner_restaurant_url"].present? %>
+                <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+              <% end %>
+            </span>
+          </li>
+
+          <li>
+            <span class="activity-label">宿泊</span>
+            <span class="activity-body">
+              <%= (day["stay_hotel"].presence || "（未設定）").to_s %>
+              <% if day["stay_hotel_url"].present? %>
+                <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+              <% end %>
+            </span>
+          </li>
+        </ul>
+      </article>
+    <% end %>
+  </section>
+
+  <div class="plan-actions">
+    <%= form_with(url: travel_plans_path, method: :post, data: { turbo: false }, local: true) do %>
+      <%= hidden_field_tag 'name', (@ai_plan["plan_name"] || "AI提案プラン").to_s %>
+      <%= hidden_field_tag 'start_date', Array(@ai_plan["itinerary"]).first.try(:[], "date").to_s %>
+      <%= hidden_field_tag 'end_date',   Array(@ai_plan["itinerary"]).last.try(:[],  "date").to_s %>
+      <%= hidden_field_tag 'itinerary_json', Array(@ai_plan["itinerary"]).to_json %>
+
+      <% if params[:travel_plan].present? %>
+        <%= hidden_field_tag 'travel_plan[travel_purpose_id]', params[:travel_plan][:travel_purpose_id] %>
+        <%= hidden_field_tag 'travel_plan[budget]',            params[:travel_plan][:budget] %>
+        <%= hidden_field_tag 'travel_plan[notes]',             params[:travel_plan][:notes] %>
+      <% end %>
+
+      <%= submit_tag "このプランを登録", class: "plan-decide-button" %>
+    <% end %>
+  </div>
 </div>

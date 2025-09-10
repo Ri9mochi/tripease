@@ -23,3 +23,15 @@ prefecture_groups.each do |group_name, prefectures|
 end
 
 puts '地方グループと都道府県データを登録しました。'
+
+
+# --- 旅行の目的（マスタ） ---
+purposes = %w[家族旅行 社員旅行 デート 一人旅 友人旅行 卒業旅行 その他]
+
+purposes.each_with_index do |name, i|
+  TravelPurpose.find_or_create_by!(name: name) do |tp|
+    tp.position = i
+  end
+end
+
+puts '旅行目的マスタ（TravelPurpose）を投入しました。'
