@@ -1,8 +1,8 @@
-# app/controllers/travel_plans_controller.rb
 require 'faraday'
 require 'json'
 require 'net/http'
 require 'uri'
+require 'digest'  # ← 署名（入力キャッシュ用）
 
 class TravelPlansController < ApplicationController
   # before_action :authenticate_user!
@@ -20,11 +20,16 @@ class TravelPlansController < ApplicationController
   # “店舗ページ”URLの形（シェイプ）判定用
   TABELOG_STORE_PATH = %r{\A/[a-z]+/A\d{4}/A\d{6}/\d+/?\z}i
 
-  # 403/タイムアウトなどオンライン検証が難しい場合に
+  # 403/タイムアウトなどでオンライン検証が難しい場合:
   # 形（シェイプ）がOKなら合格とみなす軽量モード（推奨: 本番=1）
   LIGHT_TABELOG_VALIDATION = ENV.fetch("LIGHT_TABELOG_VALIDATION", "1") == "1"
 
   HTTP_UA = "Mozilla/5.0 (TravelEaseBot; +https://example.com)".freeze
+
+  # ==== Gemini 呼び出しのフォールバック/リペア回数/スタブ ====
+  AI_MODEL_FALLBACKS   = (ENV['GEMINI_MODEL_FALLBACKS'] || 'gemini-1.5-flash,gemini-1.5-flash-8b').split(',').map(&:strip).freeze
+  AI_MAX_REPAIR_ATTEMPTS = (ENV['AI_MAX_REPAIR_ATTEMPTS'] || (Rails.env.development? ? 0 : 2)).to_i
+  AI_STUB_JSON_PATH    = ENV['AI_STUB_JSON_PATH'] # 429時/開発用の固定レスポンス
 
   # 都道府県 -> tabelog スラッグ（主要のみ記載、必要に応じて拡張）
   PREF_SLUGS = {
@@ -133,34 +138,49 @@ class TravelPlansController < ApplicationController
       destinations_names, start_date, end_date, budget, notes, num_days, purpose_name
     )
 
+    # 入力シグネチャで“同一条件の再生成”をキャッシュ
+    signature = {
+      purpose_id: tp_params[:travel_purpose_id],
+      dest_ids:   destination_ids,
+      start:      start_date, end: end_date,
+      budget:     budget, notes: notes
+    }.to_json
+    cache_key = "ai_plans:v2:#{Digest::SHA256.hexdigest(signature)}"
+
     begin
-      # 1) 生成
-      plans = call_gemini_api(prompt_text)
+      plans = Rails.cache.fetch(cache_key, expires_in: 12.hours) do
+        # 1) 生成（429ならフォールバック/スタブ）
+        raw = call_gemini_api(prompt_text)
 
-      # 2) 正規化（URL整合・朝食補完・最終宿泊制御）
-      plans = normalize_ai_plans(plans, notes: notes)
+        # 2) 正規化（URL整合・朝食補完・最終宿泊制御）
+        norm = normalize_ai_plans(raw, notes: notes)
 
-      # 3) 必須項目の穴埋め（初日含め place/morning/afternoon 空禁止）
-      plans = enforce_completeness!(plans, destinations_names)
+        # 3) 必須項目の穴埋め（初日含め place/morning/afternoon 空禁止）
+        norm = enforce_completeness!(norm, destinations_names)
 
-      # 4) 食べログURL必須検証 → 不備箇所だけ複数候補の再生成を依頼（最大4回）
-      issues = collect_meal_issues(plans)
-      attempts = 0
-      while issues.any? && attempts < 4
-        attempts += 1
-        repair_prompt = build_meal_repair_prompt(plans, issues, {
-          destinations: destinations_names,
-          dates: { start: start_date, end: end_date },
-          purpose: purpose_name,
-          notes: notes
-        })
-        corrections = call_gemini_api(repair_prompt)
-        plans = apply_meal_corrections(plans, corrections) # ← 候補から“通るものだけ”採用
-        plans = normalize_ai_plans(plans, notes: notes)
-        plans = enforce_completeness!(plans, destinations_names)
-        issues = collect_meal_issues(plans)
+        # 4) 食べログURL必須検証 → 不備箇所だけ複数候補の再生成を依頼（環境変数で回数制御）
+        issues   = collect_meal_issues(norm)
+        attempts = 0
+        while issues.any? && attempts < AI_MAX_REPAIR_ATTEMPTS
+          attempts += 1
+          repair_prompt = build_meal_repair_prompt(norm, issues, {
+            destinations: destinations_names,
+            dates: { start: start_date, end: end_date },
+            purpose: purpose_name,
+            notes: notes
+          })
+          corrections = call_gemini_api(repair_prompt)
+          norm = apply_meal_corrections(norm, corrections)
+          norm = normalize_ai_plans(norm, notes: notes)
+          norm = enforce_completeness!(norm, destinations_names)
+          issues = collect_meal_issues(norm)
+        end
+
+        norm
       end
 
+      # 最終バリデーション（ダメならユーザーに条件変更を促す）
+      issues = collect_meal_issues(plans)
       if issues.any?
         Rails.logger.warn("Tabelog validation failed after repair: #{issues.inspect}")
         render js: "alert('レストラン情報の検証に失敗しました。条件（エリア/日程/人数/ジャンル）を少し変えて再生成してください。');" and return
@@ -174,7 +194,7 @@ class TravelPlansController < ApplicationController
       end
     rescue => e
       Rails.logger.error("AI生成エラー: #{e.message}")
-      render js: "alert('AIによるプラン生成中にエラーが発生しました。時間を置いて再度お試しください。');"
+      render js: "alert('AIによるプラン生成中にエラーが発生しました。環境設定（APIキー/無料枠）をご確認ください。');"
     end
   end
 
@@ -205,43 +225,63 @@ class TravelPlansController < ApplicationController
     )
   end
 
-  # ===== Gemini 呼び出し & 解析 =====
-  def call_gemini_api(prompt_text)
+  # ===== Gemini 呼び出し（フォールバック＆429対策＋ローカルスタブ） =====
+  def call_gemini_api(prompt_text, model: nil)
     Rails.logger.debug("--- AI API呼び出し開始 ---")
-    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    models = [model, *AI_MODEL_FALLBACKS].compact.uniq
 
-    conn = Faraday.new(url: url) do |f|
-      f.request  :json
-      f.response :json
-    end
+    models.each do |m|
+      url  = "https://generativelanguage.googleapis.com/v1beta/models/#{m}:generateContent"
+      conn = Faraday.new(url: url) { |f| f.request :json; f.response :json }
 
-    body = {
-      contents: [
-        { role: "user", parts: [ { text: prompt_text } ] }
-      ],
-      generationConfig: {
-        response_mime_type: "application/json",
-        temperature: 0.2,
-        topP: 0.5,
-        topK: 40
+      body = {
+        contents: [{ role: "user", parts: [{ text: prompt_text }] }],
+        generationConfig: {
+          response_mime_type: "application/json",
+          temperature: 0.2, topP: 0.5, topK: 40
+        }
       }
-    }
 
-    response = conn.post do |req|
-      req.url "?key=#{ENV['GEMINI_API_KEY']}"
-      req.headers['Content-Type'] = 'application/json'
-      req.body = body.to_json
+      resp = conn.post do |req|
+        req.url "?key=#{ENV['GEMINI_API_KEY']}"
+        req.headers['Content-Type'] = 'application/json'
+        req.body = body.to_json
+      end
+
+      Rails.logger.debug("Gemini raw response(#{m}): #{resp.body.inspect}")
+
+      # レート制限（429）は次のモデルへ
+      if resp.status.to_i == 429 || (resp.body.is_a?(Hash) && resp.body.dig("error", "code") == 429)
+        Rails.logger.warn("Gemini 429 quota for model=#{m}, trying next fallback...")
+        next
+      end
+
+      # その他エラーは即失敗
+      if resp.status.to_i >= 400
+        raise "Gemini error (#{m}): #{resp.body.inspect}"
+      end
+
+      json_text = resp.body.dig("candidates", 0, "content", "parts", 0, "text")
+      return parse_ai_json(json_text)
     end
 
-    Rails.logger.debug("Gemini raw response: #{response.body.inspect}")
+    # すべて失敗 → ローカルスタブへ
+    if Rails.env.development? && AI_STUB_JSON_PATH.present? && File.exist?(AI_STUB_JSON_PATH)
+      Rails.logger.warn("Using local AI stub: #{AI_STUB_JSON_PATH}")
+      return JSON.parse(File.read(AI_STUB_JSON_PATH))
+    end
 
-    json_text = response.body.dig("candidates", 0, "content", "parts", 0, "text")
-    parse_ai_json(json_text)
+    raise "Gemini quota exceeded for all fallback models"
   rescue => e
     Rails.logger.error("Gemini API呼び出しエラー: #{e.message}")
+    if Rails.env.development? && AI_STUB_JSON_PATH.present? && File.exist?(AI_STUB_JSON_PATH)
+      Rails.logger.warn("Using local AI stub (rescue): #{AI_STUB_JSON_PATH}")
+      return JSON.parse(File.read(AI_STUB_JSON_PATH))
+    end
     []
   end
 
+  # 余計な前後テキストが混じってもJSONだけ抜き出してパース
   def parse_ai_json(json_text)
     return [] if json_text.blank?
     text = json_text.to_s.strip
@@ -452,7 +492,7 @@ class TravelPlansController < ApplicationController
     # 軽量モード：形がOKなら合格（WAF対策）
     return true if LIGHT_TABELOG_VALIDATION
 
-    # 厳密モード：オンライン検証（取れなければ形OKでソフト合格）
+    # 厳密モード：オンライン検証（取得不可なら形OKでソフト合格）
     final_uri, resp = follow_redirects(uri, limit: 3)
     unless resp && resp.status.to_i == 200
       Rails.logger.info("tabelog soft-pass (#{resp&.status}): #{url}")
