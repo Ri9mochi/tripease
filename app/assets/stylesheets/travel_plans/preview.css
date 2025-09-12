@@ -27,9 +27,13 @@
 
 .plan-title {
   margin: 0;
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 800;
   letter-spacing: 0.2px;
+  line-height: 1.25;
+  color: #ffffff !important;                 /* ← 白で固定 */
+  text-shadow: 0 2px 8px rgba(0,0,0,.25),    /* 影で可読性UP */
+               0 0 1px rgba(255,255,255,.08);
 }
 
 .plan-meta {
@@ -60,7 +64,7 @@
   align-items: center;
 }
 
-/* ====== Back Button (reuse) ====== */
+/* ====== Back Button ====== */
 .preview-back-button {
   display: inline-block;
   background: #ffffff;
@@ -143,7 +147,7 @@
   line-height: 1.6;
 }
 
-/* Reservation Link (reuse) */
+/* Reservation Link */
 .reservation-link {
   display: inline-block;
   font-size: 12px;
@@ -194,14 +198,10 @@
     align-items: stretch;
     gap: 12px;
   }
+  .plan-title {
+    font-size: 22px;
+  }
   .activity-list li {
     grid-template-columns: 88px 1fr;
   }
-  .plan-title {
-    font-size: 20px;
-  }
 }
-
-/* ====== （あなたの既存CSSの核は引き継ぎつつ上書き） ====== */
-/* 既存 .itinerary-container / .itinerary-day-card / .reservation-link / .plan-actions 等は
-   同名クラスで上書き＆増強しています。 */
