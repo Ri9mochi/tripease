@@ -1,22 +1,34 @@
+/* === Full-viewport background below the header === */
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* Header height (adjust if your header is taller/shorter) */
+:root { --header-h: 64px; }
+
+/* Main content area fills the screen under the header */
+.main-content {
+  background-color: #f5f8fa; /* light gray */
+  min-height: calc(100vh - var(--header-h));
+
+  margin: 0;
+  padding: 0;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+
+  /* existing spacing so content doesn't stick to the top */
+  padding-top: 50px;
+}
+
+/* Page container width */
 .page-container {
   max-width: 960px;
   margin: 0 auto;
   padding: 20px;
 }
 
-/* ヘッダーは別途shared/header.cssで定義 */
-
-/* メインコンテンツ */
-.main-content {
-  margin: 0;
-  padding: 0;
-  font-family: 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f5f8fa; /* 薄いグレーの背景 */
-  color: #333;
-  padding-top: 50px;
-}
-
-/* ウェルカムセクション */
+/* ===== Welcome section ===== */
 .welcome-section {
   text-align: center;
   margin-bottom: 50px;
@@ -25,109 +37,110 @@
 .welcome-message {
   font-size: 36px;
   font-weight: 700;
-  color: #007bff; /* メインカラーの青 */
-  margin-bottom: 5px;
+  color: #1677ff; /* primary blue */
+  margin-bottom: 6px;
 }
 
 .sub-message {
   color: #555;
   font-size: 18px;
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
 
-/* プランボタン */
+/* CTA button */
 .plan-button {
   display: inline-block;
-  background-color: #007bff;
+  background-color: #1677ff;
   color: #fff;
-  padding: 15px 30px;
-  border-radius: 50px;
+  padding: 14px 28px;
+  border-radius: 9999px;
   text-decoration: none;
-  font-weight: 600;
-  letter-spacing: 1px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2);
+  font-weight: 700;
+  letter-spacing: .3px;
+  transition: all .2s ease;
+  box-shadow: 0 8px 20px rgba(22, 119, 255, .22);
 }
 
 .plan-button:hover {
-  background-color: #0056b3;
+  background-color: #0f6ae6;
   transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.3);
+  box-shadow: 0 12px 28px rgba(22, 119, 255, .28);
 }
 
-/* あなたの旅行プランセクション */
+/* ===== My plans section ===== */
 .my-plans-section {
   background-color: #fff;
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
   padding: 30px;
 }
 
 .section-title {
   font-size: 24px;
   font-weight: 700;
-  color: #007bff;
-  border-bottom: 2px solid #e0e0e0;
-  padding-bottom: 15px;
-  margin-bottom: 25px;
+  color: #1677ff;
+  border-bottom: 2px solid #eaeef2;
+  padding-bottom: 12px;
+  margin-bottom: 22px;
 }
 
 .my-plans-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 18px;
 }
 
 .no-plans-message {
   text-align: center;
   color: #777;
-  padding: 40px 0;
+  padding: 38px 0;
   font-style: italic;
 }
 
-/* 個別のプランカード */
+/* Plan card */
 .my-plan-card {
-  background-color: #f9fbfd; /* カードの背景色を少し変えて立体感を出す */
+  background-color: #f9fbfd;
   border: 1px solid #e9eef2;
   border-radius: 10px;
-  padding: 20px;
+  padding: 18px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  transition: all 0.3s ease;
+  transition: transform .2s ease, box-shadow .2s ease;
 }
 
 .my-plan-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.08);
 }
 
 .my-plan-card h4 {
   font-size: 20px;
-  font-weight: 600;
+  font-weight: 700;
   color: #2c3e50;
-  margin: 0 0 10px 0;
+  margin: 0 0 8px 0;
 }
 
 .my-plan-card p {
   font-size: 15px;
-  color: #777;
-  margin: 0 0 15px 0;
+  color: #667085;
+  margin: 0 0 12px 0;
 }
 
-/* 詳細を見るボタン */
+/* Details button */
 .view-details-button {
   display: inline-block;
-  background-color: #007bff;
+  background-color: #1677ff;
   color: #fff;
   padding: 8px 18px;
-  border-radius: 50px;
+  border-radius: 9999px;
   text-decoration: none;
   font-size: 14px;
-  font-weight: 600;
-  transition: background-color 0.3s ease;
+  font-weight: 700;
+  transition: background-color .2s ease, transform .1s ease;
 }
 
 .view-details-button:hover {
-  background-color: #0056b3;
+  background-color: #0f6ae6;
+  transform: translateY(-1px);
 }
