@@ -1,6 +1,8 @@
+<!-- app/views/devise/registrations/new.html.erb -->
 <div class="registration-container">
   <div class="registration-form-card">
     <h2 class="form-title">新規登録</h2>
+
     <%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
       <%= render "devise/shared/error_messages", resource: resource %>
 
@@ -18,6 +20,9 @@
         <%= f.label :nickname, "ニックネーム" %><br />
         <%= f.text_field :nickname, class: "form-input" %>
       </div>
+
+      <!-- ▼ ここで地方→都道府県 連動UIのパーシャルを呼び出す -->
+      <%= render "devise/registrations/home_location_fields", f: f %>
 
       <div class="field">
         <%= f.label :email, "メールアドレス" %><br />

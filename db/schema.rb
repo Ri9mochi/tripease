@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2025_09_09_032909) do
+ActiveRecord::Schema[7.1].define(version: 2025_09_11_081543) do
   create_table "destinations", charset: "utf8mb3", force: :cascade do |t|
     t.bigint "prefecture_group_id", null: false
     t.string "name", null: false
@@ -70,7 +70,9 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_09_032909) do
     t.datetime "remember_created_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "home_destination_id"
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["home_destination_id"], name: "index_users_on_home_destination_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
@@ -79,4 +81,5 @@ ActiveRecord::Schema[7.1].define(version: 2025_09_09_032909) do
   add_foreign_key "plan_destinations", "travel_plans"
   add_foreign_key "travel_plans", "travel_purposes"
   add_foreign_key "travel_plans", "users"
+  add_foreign_key "users", "destinations", column: "home_destination_id", on_delete: :nullify
 end

@@ -1,0 +1,84 @@
+<!-- app/views/devise/registrations/_home_location_fields.html.erb -->
+<%# resource は Devise の User インスタンス（new/edit どちらでもOK） %>
+
+<%# 1) 住まいの「地方」セレクト（モデルに保存しないUI用） %>
+<div class="field">
+  <label for="pref_group_select">住まいの地方</label><br>
+  <select id="pref_group_select" class="form-input">
+    <option value="">選択してください</option>
+    <% PrefectureGroup.order(:id).each do |g| %>
+      <% selected_group_id = resource.home_destination&.prefecture_group_id %>
+      <option value="<%= g.id %>" <%= "selected" if selected_group_id == g.id %>><%= g.name %></option>
+    <% end %>
+  </select>
+</div>
+
+<%# 2) 住まいの「都道府県」セレクト（こちらだけ user に保存） %>
+<div class="field">
+  <%= f.label :home_destination_id, "住まいの都道府県" %><br>
+  <%= f.select :home_destination_id,
+        [],                                        # 初期は空。JSで差し込む
+        { include_blank: "選択してください" },
+        class: "form-input",
+        id: "user_home_destination_id",
+        disabled: true %>
+</div>
+
+<%# 3) 連動用データをHTMLに埋め込む（1回だけでOK） %>
+<%
+  pref_map = PrefectureGroup.includes(:destinations).order(:id).map do |g|
+    [g.id, g.destinations.order(:name).map { |d| { id: d.id, name: d.name } }]
+  end.to_h
+
+  selected_group_id = resource.home_destination&.prefecture_group_id
+  selected_dest_id  = resource.home_destination_id
+%>
+
+<div id="pref-data"
+     data-map="<%= pref_map.to_json %>"
+     data-selected-group="<%= selected_group_id || '' %>"
+     data-selected-dest ="<%= selected_dest_id  || '' %>"></div>
+
+<%= javascript_tag do %>
+  (function(init){
+    function ready(fn){
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn, { once: true });
+        document.addEventListener('turbo:load', fn, { once: true });
+      } else { fn(); }
+    }
+    ready(function(){
+      var node   = document.getElementById('pref-data');
+      if(!node) return;
+      var MAP   = JSON.parse(node.dataset.map || '{}');
+      var selG  = document.getElementById('pref_group_select');
+      var selP  = document.getElementById('user_home_destination_id');
+
+      function fillPref(groupId){
+        var list = MAP[groupId] || [];
+        var opts = ['<option value="">選択してください</option>'];
+        list.forEach(function(i){ opts.push('<option value="'+i.id+'">'+i.name+'</option>'); });
+        selP.innerHTML = opts.join('');
+        selP.disabled  = (list.length === 0);
+      }
+
+      // 初期化（編集時など）
+      var initG = node.dataset.selectedGroup;
+      var initP = node.dataset.selectedDest;
+      if(initG){
+        selG.value = initG;
+        fillPref(initG);
+        if(initP){ selP.value = initP; }
+      } else {
+        // 新規作成時は未選択状態
+        selP.innerHTML = '<option value="">選択してください</option>';
+        selP.disabled  = true;
+      }
+
+      selG.addEventListener('change', function(e){
+        fillPref(e.target.value);
+        selP.value = '';
+      });
+    });
+  })();
+<% end %>

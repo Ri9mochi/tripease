@@ -1,0 +1,133 @@
+/* ===========================
+   Registration (light / Trip風)
+   =========================== */
+
+/* カラートークン */
+:root {
+  --bg:           #f7f9fc;   /* ページ背景 */
+  --card:         #ffffff;   /* カード背景 */
+  --text:         #1f2d3d;   /* 文字メイン */
+  --muted:        #6b7b8f;   /* サブテキスト */
+  --border:       #dfe6ee;   /* 枠線 */
+  --primary:      #0b8cff;   /* アクセント(Trip系ブルー) */
+  --primary-dark: #0974cc;
+  --shadow:       0 10px 28px rgba(16, 36, 94, 0.10);
+}
+
+/* ページ全体のセンタリング + 背景を明るく */
+.registration-page {
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+  box-sizing: border-box;
+}
+
+/* コンテナ（中央寄せ） */
+.registration-container {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* フォームカード（白基調） */
+.registration-form-card {
+  background: var(--card);
+  color: var(--text);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  padding: 28px;
+}
+
+/* タイトル */
+.form-title {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  margin: 6px 0 22px;
+  color: var(--text);
+}
+
+/* ラベル/フィールド */
+.field { margin-bottom: 18px; }
+.field label {
+  display: block;
+  font-size: 14px;
+  color: #384a5a;
+  margin-bottom: 6px;
+}
+
+/* 入力/セレクト */
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  font-size: 16px;
+  box-sizing: border-box;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s;
+}
+
+.form-input::placeholder { color: #9aa8b7; }
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(11, 140, 255, .16);
+}
+
+/* セレクト（iOS/Safari対策） */
+select.form-input {
+  appearance: none;
+  background-image: none;
+  line-height: 1.2;
+  padding-right: 36px;
+}
+
+/* 補助テキスト */
+.form-help-text { color: var(--muted); font-size: 12px; }
+
+/* 送信ボタン */
+.actions { margin-top: 26px; }
+
+.form-submit-button {
+  width: 100%;
+  padding: 13px 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .18s ease, transform .04s ease;
+}
+.form-submit-button:hover { background: var(--primary-dark); }
+.form-submit-button:active { transform: translateY(1px); }
+
+/* リンク */
+.form-links { text-align: center; margin-top: 18px; font-size: 14px; }
+.form-links a { color: var(--primary); text-decoration: none; }
+.form-links a:hover { text-decoration: underline; }
+
+/* エラー表示（控えめな赤） */
+#error_explanation {
+  background: #fdeff1;
+  color: #8c1d2b;
+  border: 1px solid #f5c8cf;
+  border-radius: 10px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+#error_explanation h2 { font-size: 15px; margin: 0 0 8px; font-weight: 700; }
+#error_explanation ul { margin: 0; padding-left: 18px; }
+#error_explanation li { font-size: 14px; }
+
+/* モバイル余白微調整 */
+@media (max-width: 420px) {
+  .registration-form-card { padding: 22px; }
+}
