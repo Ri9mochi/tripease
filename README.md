@@ -1,108 +1,68 @@
-## usersテーブル
+## アプリケーション名
+Tripease
 
-|Column             |Type   |Options                  |
-|-------------------|-------|-------------------------|
-|first_name         |string |null: false              |
-|last_name          |string |null: false              |
-|nickname           |string |null: false              |
-|email              |string |null: false, unique: true|
-|encrypted_password |string |null: false              |
+## アプリケーション概要
+旅行の計画をAIが自動でプランニングを行い、登録した旅行プランはマイページ上で管理することができる。
 
-### Association
-has_many :travel_plans, dependent: :destroy
+## URL
+https://tripease-8qia.onrender.com
 
+## テスト用アカウント
+・Basic認証ID：admin
+・Basic認証パスワード：test1234
+・メールアドレス：test3@test.co.jp
+・パスワード：test1234
 
-## travel_plansテーブル
+## 利用方法
+### AI自動プラン機能
+・「新しい旅行を計画する」をクリックし、検索条件を入力するとAIが自動で旅行プランを2案作成してくれます。
+・提案された旅行プランをクリックするとプランの詳細をプレビューできます。
+・気に入ったプランがあれば登録をすることができます。
 
-| Column      | Type       | Options                         |
-| ----------- | ---------- | ------------------------------- |
-| user_id     | references | null: false, foreign_key: true  |
-| name        | string     | null: false                     |
-| start_date  | date       | null: false                     |
-| end_date    | date       | null: false                     |
-| budget      | integer    |                                 |
-| notes       | text       |                                 |
-| status      | string     | default: draft                  |
+### 登録プランの管理
+・登録されたプランはマイページ上に登録をされます。
+・登録されたプランの詳細をマイページ上で確認することができます。
 
-### Association
-belongs_to :user
-has_many :plan_days, dependent: :destroy
-has_many :plan_destinations, dependent: :destroy
-has_many :destinations, through: :plan_destinations
+## アプリケーションを作成した背景
+旅行に行くのは好きだが、旅行を計画し、手配をする煩わしさを感じていた自身の実体験から、
+旅行計画等の準備の手間を省くことで、旅行に行くハードルを下げたいという思いから、本アプリケーションを作成をしました。
 
+## 洗い出した要件
+https://docs.google.com/spreadsheets/d/1IUagI43PD9eNOFz97Y5nwwy7l1HjjJoL/edit?usp=sharing&ouid=110602170881444460436&rtpof=true&sd=true
 
-## destinations（マスタ）
-| Column         | Type    | Options                   |
-| -------------- | ------- | ------------------------- |
-| prefecture_id  | integer | null: false, unique: true |
-| name           | string  | null: false, unique: true |
+## 実装した機能についての画像やGIFおよびその説明
+[![Image from Gyazo](https://i.gyazo.com/f0cdd0a6b38ff8084c8259d324055951.gif)](https://gyazo.com/f0cdd0a6b38ff8084c8259d324055951)
+[![Image from Gyazo](https://i.gyazo.com/3e0bf2181f15c83101bac8e7004c74ca.gif)](https://gyazo.com/3e0bf2181f15c83101bac8e7004c74ca)
+[![Image from Gyazo](https://i.gyazo.com/98c5a16a04a816718cedfe4f98a3a0b5.gif)](https://gyazo.com/98c5a16a04a816718cedfe4f98a3a0b5)
+[![Image from Gyazo](https://i.gyazo.com/57f8b4389b81d0ad61a4ed7e7b6eb157.gif)](https://gyazo.com/57f8b4389b81d0ad61a4ed7e7b6eb157)
 
-### Association
-has_many :plan_destinations
-has_many :travel_plans, through: :plan_destinations
+## 実装予定の機能
+・プレビューされたプランの編集機能。（現在実装中）
+・AI機能の高度化
+・DB最適化
 
+## データベース設計
+[![Image from Gyazo](https://i.gyazo.com/ca99a5f77870e4bf5f8ac83f24133eaf.png)](https://gyazo.com/ca99a5f77870e4bf5f8ac83f24133eaf)
 
-## plan_destinations（旅行プランと都道府県の中間DB）
-| Column           | Type       | Options                         |
-| ---------------- | ---------- | ------------------------------- |
-| travel_plan_id   | references | null: false, foreign_key: true  |
-| destination_id   | references | null: false, foreign_key: true  |
+## 画面遷移図
+[![Image from Gyazo](https://i.gyazo.com/9c9d52ffa8848082e2587784e4f888cf.png)](https://gyazo.com/9c9d52ffa8848082e2587784e4f888cf)
 
-### Association
-belongs_to :travel_plan
-belongs_to :destination
+## 開発環境
+・フロントエンド
+  - HTML, CSS, JavaScript
+・バックエンド
+  - Ruby, Ruby on Rails
+・データベース
+  - PostgreSQL
+・テスト
+  - RSpec
+・API
+  - GeminiAPI
+・テキストエディタ
+  - Visual Studio Code
+・バージョン管理
+  - GitHub
 
-
-## plan_days
-| Column           | Type       | Options                         |
-| ---------------- | ---------- | ------------------------------- |
-| travel_plan_id   | references | null: false, foreign_key: true  |
-| date             | date       | null: false                     |
-| day_number       | integer    | null: false                     |
-
-### Association
-belongs_to :travel_plan
-has_many :plan_items, dependent: :destroy
-
-
-## categories（プラン項目マスタ）
-| Column         | Type   | Options                   |
-| -------------- | ------ | ------------------------- |
-| category_code  | string | null: false, unique: true |
-| name           | string | null: false, unique: true |
-
-### Association
-has_many :plan_items
-
-
-## plan_items
-| Column           | Type       | Options                         |
-| ---------------- | ---------- | ------------------------------- |
-| plan_day_id      | references | null: false, foreign_key: true  |
-| category_id      | references | null: false, foreign_key: true  |
-| title            | string     | null: false                     |
-| description      | text       |                                 |
-| image_url        | string     |                                 |
-| reservation_url  | string     |                                 |
-
-### Association
-belongs_to :plan_day
-belongs_to :category
-belongs_to :travel_plan
-
-
-
-## メモ
-users：ユーザー管理
-
-travel_plans：旅行プラン（全体の概要）
-
-plan_days：プラン内の日別スケジュール
-
-plan_items：日別スケジュールの中の宿泊・食事・観光などの詳細
-
-destinations：行き先（都道府県）
-
-plan_destinations：旅行プランと行き先の中間テーブル（複数都道府県対応）
-
-recommendations：AIが提案する関連スポットやイベント
+## 工夫したポイント
+AIから出力されるデータを所定のビューで反映されるようにコントローラーの設定を行っている点。
+また、食事どころのURLはすべて食べログが出力され、AIの提示内容とURLが一致するようプロンプトを設定している点。
