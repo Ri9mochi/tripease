@@ -24,66 +24,159 @@
     </div>
   </header>
 
+  <%# ====== 編集できるプレビュー（各項目をその場で編集） ====== %>
   <section class="itinerary-container">
-    <% Array(@ai_plan["itinerary"]).each do |day| %>
+    <% Array(@ai_plan["itinerary"]).each_with_index do |day, idx| %>
+      <% dnum = (day["day"] || idx + 1).to_i %>
       <article class="itinerary-day-card">
         <h3 class="day-title">
-          Day <%= day["day"].presence || "-" %>：<%= (day["date"] || "").to_s %>
+          Day
+          <input type="number"
+                 min="1"
+                 class="itinerary-field small-number"
+                 data-day="<%= dnum %>"
+                 data-key="day"
+                 value="<%= dnum %>"
+                 style="width:72px; text-align:center; margin-right:6px;">
+          ：
+          <input type="date"
+                 class="itinerary-field"
+                 data-day="<%= dnum %>"
+                 data-key="date"
+                 value="<%= (day["date"] || "").to_s %>"
+                 style="margin-left:6px;">
         </h3>
 
         <ul class="activity-list">
           <li>
             <span class="activity-label">場所</span>
-            <span class="activity-body"><%= (day["place"].presence || "（未設定）").to_s %></span>
+            <span class="activity-body">
+              <input type="text"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="place"
+                     value="<%= (day["place"] || "").to_s %>"
+                     placeholder="例：札幌 / 仙台 / 那覇"
+                     style="width:100%;">
+            </span>
           </li>
 
           <li>
             <span class="activity-label">朝食</span>
             <span class="activity-body">
-              <%= (day["breakfast_restaurant"].presence || "（未設定）").to_s %>
-              <% if day["breakfast_restaurant_url"].present? %>
-                <%= link_to "予約", day["breakfast_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-              <% end %>
+              <input type="text"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="breakfast_restaurant"
+                     value="<%= (day["breakfast_restaurant"] || "").to_s %>"
+                     placeholder="例：ホテル朝食・店名など"
+                     style="width:100%; margin-bottom:6px;">
+              <input type="url"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="breakfast_restaurant_url"
+                     value="<%= (day["breakfast_restaurant_url"] || "").to_s %>"
+                     placeholder="朝食のURL（任意）"
+                     style="width:100%;">
             </span>
           </li>
 
           <li>
             <span class="activity-label">午前</span>
-            <span class="activity-body"><%= (day["morning_activity"].presence || "（未設定）").to_s %></span>
+            <span class="activity-body">
+              <textarea
+                class="itinerary-field"
+                data-day="<%= dnum %>"
+                data-key="morning_activity"
+                placeholder="午前の活動"
+                style="width:100%; min-height:64px;"><%= (day["morning_activity"] || "").to_s %></textarea>
+            </span>
           </li>
 
           <li>
             <span class="activity-label">昼食</span>
             <span class="activity-body">
-              <%= (day["lunch_restaurant"].presence || "（未設定）").to_s %>
-              <% if day["lunch_restaurant_url"].present? %>
-                <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-              <% end %>
+              <input type="text"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="lunch_restaurant"
+                     value="<%= (day["lunch_restaurant"] || "").to_s %>"
+                     placeholder="店名"
+                     style="width:100%; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="url"
+                       class="itinerary-field"
+                       data-day="<%= dnum %>"
+                       data-key="lunch_restaurant_url"
+                       value="<%= (day["lunch_restaurant_url"] || "").to_s %>"
+                       placeholder="食べログの店舗ページURL"
+                       style="flex:1;">
+                <% if day["lunch_restaurant_url"].present? %>
+                  <%= link_to "予約", day["lunch_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+                <% end %>
+              </div>
             </span>
           </li>
 
           <li>
             <span class="activity-label">午後</span>
-            <span class="activity-body"><%= (day["afternoon_activity"].presence || "（未設定）").to_s %></span>
+            <span class="activity-body">
+              <textarea
+                class="itinerary-field"
+                data-day="<%= dnum %>"
+                data-key="afternoon_activity"
+                placeholder="午後の活動"
+                style="width:100%; min-height:64px;"><%= (day["afternoon_activity"] || "").to_s %></textarea>
+            </span>
           </li>
 
           <li>
             <span class="activity-label">夕食</span>
             <span class="activity-body">
-              <%= (day["dinner_restaurant"].presence || "（未設定）").to_s %>
-              <% if day["dinner_restaurant_url"].present? %>
-                <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-              <% end %>
+              <input type="text"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="dinner_restaurant"
+                     value="<%= (day["dinner_restaurant"] || "").to_s %>"
+                     placeholder="店名"
+                     style="width:100%; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="url"
+                       class="itinerary-field"
+                       data-day="<%= dnum %>"
+                       data-key="dinner_restaurant_url"
+                       value="<%= (day["dinner_restaurant_url"] || "").to_s %>"
+                       placeholder="食べログの店舗ページURL"
+                       style="flex:1;">
+                <% if day["dinner_restaurant_url"].present? %>
+                  <%= link_to "予約", day["dinner_restaurant_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+                <% end %>
+              </div>
             </span>
           </li>
 
           <li>
             <span class="activity-label">宿泊</span>
             <span class="activity-body">
-              <%= (day["stay_hotel"].presence || "（未設定）").to_s %>
-              <% if day["stay_hotel_url"].present? %>
-                <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
-              <% end %>
+              <input type="text"
+                     class="itinerary-field"
+                     data-day="<%= dnum %>"
+                     data-key="stay_hotel"
+                     value="<%= (day["stay_hotel"] || "").to_s %>"
+                     placeholder="ホテル名（最終日は空欄可）"
+                     style="width:100%; margin-bottom:6px;">
+              <div style="display:flex; gap:8px; align-items:center;">
+                <input type="url"
+                       class="itinerary-field"
+                       data-day="<%= dnum %>"
+                       data-key="stay_hotel_url"
+                       value="<%= (day["stay_hotel_url"] || "").to_s %>"
+                       placeholder="ホテル公式サイトURL（任意）"
+                       style="flex:1;">
+                <% if day["stay_hotel_url"].present? %>
+                  <%= link_to "予約", day["stay_hotel_url"], target: "_blank", rel: "noopener", class: "reservation-link" %>
+                <% end %>
+              </div>
             </span>
           </li>
         </ul>
@@ -92,11 +185,13 @@
   </section>
 
   <div class="plan-actions">
-    <%= form_with(url: travel_plans_path, method: :post, data: { turbo: false }, local: true) do %>
-      <%= hidden_field_tag 'name', (@ai_plan["plan_name"] || "AI提案プラン").to_s %>
-      <%= hidden_field_tag 'start_date', Array(@ai_plan["itinerary"]).first.try(:[], "date").to_s %>
-      <%= hidden_field_tag 'end_date',   Array(@ai_plan["itinerary"]).last.try(:[],  "date").to_s %>
-      <%= hidden_field_tag 'itinerary_json', Array(@ai_plan["itinerary"]).to_json %>
+    <%= form_with(url: travel_plans_path, method: :post, data: { turbo: false }, local: true, id: "plan-submit-form") do %>
+      <%= hidden_field_tag 'name', (@ai_plan["plan_name"] || "AI提案プラン").to_s, id: "plan_name_hidden" %>
+      <%= hidden_field_tag 'start_date', Array(@ai_plan["itinerary"]).first.try(:[], "date").to_s, id: "start_date_hidden" %>
+      <%= hidden_field_tag 'end_date',   Array(@ai_plan["itinerary"]).last.try(:[],  "date").to_s, id: "end_date_hidden" %>
+
+      <%# ここにJSで組み立てたJSONを入れる %>
+      <%= hidden_field_tag 'itinerary_json', "", id: "itinerary_hidden" %>
 
       <% if params[:travel_plan].present? %>
         <%= hidden_field_tag 'travel_plan[travel_purpose_id]', params[:travel_plan][:travel_purpose_id] %>
@@ -104,7 +199,78 @@
         <%= hidden_field_tag 'travel_plan[notes]',             params[:travel_plan][:notes] %>
       <% end %>
 
-      <%= submit_tag "このプランを登録", class: "plan-decide-button" %>
+      <%= submit_tag "この内容で登録", class: "plan-decide-button", id: "submit-button" %>
     <% end %>
   </div>
 </div>
+
+<%# ===== 送信前に画面の入力値から JSON を生成するスクリプト ===== %>
+<script>
+  (function () {
+    const form      = document.getElementById('plan-submit-form');
+    const hidden    = document.getElementById('itinerary_hidden');
+    const startH    = document.getElementById('start_date_hidden');
+    const endH      = document.getElementById('end_date_hidden');
+
+    function collectItinerary() {
+      const fields = Array.from(document.querySelectorAll('.itinerary-field'));
+      // day番号ごとに束ねる
+      const byDay = new Map();
+
+      fields.forEach(el => {
+        const day = parseInt(el.dataset.day, 10);
+        const key = el.dataset.key;
+        if (!day || !key) return;
+        if (!byDay.has(day)) byDay.set(day, { day: day });
+
+        const v = (el.tagName === 'TEXTAREA') ? el.value : el.value;
+        byDay.get(day)[key] = v;
+      });
+
+      // day の昇順で配列へ
+      const arr = Array.from(byDay.keys()).sort((a,b)=>a-b).map(d => byDay.get(d));
+
+      return arr;
+    }
+
+    function minimalValidate(arr) {
+      if (!Array.isArray(arr) || arr.length === 0) return '日程がありません。';
+
+      // start/end hidden を最新に（1日目/最終日の date から）
+      const first = arr.find(d => !!d.date);
+      const last  = [...arr].reverse().find(d => !!d.date);
+      if (first && startH) startH.value = String(first.date || '');
+      if (last  && endH)   endH.value   = String(last.date   || '');
+
+      for (let i = 0; i < arr.length; i++) {
+        const d = arr[i];
+        const required = ['place', 'morning_activity', 'afternoon_activity'];
+        for (const k of required) {
+          if (!d[k] || String(d[k]).trim() === '') {
+            return `Day ${d.day || i+1} の「${k}」が未入力です。`;
+          }
+        }
+        // 食べログURL（昼/夜のみ、入力がある場合だけドメインチェック）
+        const meals = ['lunch_restaurant_url', 'dinner_restaurant_url'];
+        for (const m of meals) {
+          const url = (d[m] || '').trim();
+          if (url && !/https?:\/\/[^\/]*tabelog\.com\//i.test(url)) {
+            return `Day ${d.day || i+1} の ${m} は tabelog.com の店舗ページURLを指定してください。`;
+          }
+        }
+      }
+      return null;
+    }
+
+    form.addEventListener('submit', function (e) {
+      const itinerary = collectItinerary();
+      const err = minimalValidate(itinerary);
+      if (err) {
+        e.preventDefault();
+        alert(err);
+        return;
+      }
+      hidden.value = JSON.stringify(itinerary);
+    });
+  })();
+</script>

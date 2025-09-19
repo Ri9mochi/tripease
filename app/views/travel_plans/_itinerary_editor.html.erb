@@ -1,0 +1,43 @@
+<%# 使い方:
+    render "itinerary_editor",
+      itinerary: @ai_plan["itinerary"],           # or @travel_plan.itinerary
+      readonly: true/false                         # true=入力不可(プレビュー開始時)
+%>
+
+<% days = Array(itinerary) %>
+<% field_specs = [
+  { label: "場所",             key: "place",                       type: "text" },
+  { label: "朝食",             key: "breakfast_restaurant",        type: "text" },
+  { label: "朝食URL",          key: "breakfast_restaurant_url",    type: "url"  },
+  { label: "午前",             key: "morning_activity",            type: "text" },
+  { label: "昼食",             key: "lunch_restaurant",            type: "text" },
+  { label: "昼食URL",          key: "lunch_restaurant_url",        type: "url"  },
+  { label: "午後",             key: "afternoon_activity",          type: "text" },
+  { label: "夕食",             key: "dinner_restaurant",           type: "text" },
+  { label: "夕食URL",          key: "dinner_restaurant_url",       type: "url"  },
+  { label: "宿泊",             key: "stay_hotel",                  type: "text" },
+  { label: "宿泊URL",          key: "stay_hotel_url",              type: "url"  }
+] %>
+
+<div class="itinerary-editor" data-readonly="<%= readonly ? 'true' : 'false' %>">
+  <% days.each_with_index do |day, i| %>
+    <article class="itinerary-day-card editable" data-day-index="<%= i %>">
+      <h3 class="day-title">
+        Day
+        <input class="day field" type="number" min="1" value="<%= day["day"].to_i %>" <%= "disabled" if readonly %> style="width:70px">
+        ：
+        <input class="date field" type="date" value="<%= day["date"] %>" <%= "disabled" if readonly %>>
+      </h3>
+
+      <% field_specs.each do |fs| %>
+        <div class="field-row" style="display:grid;grid-template-columns:120px 1fr;gap:12px;margin:8px 0;">
+          <label><%= fs[:label] %></label>
+          <input class="field <%= fs[:key] %>"
+                 type="<%= fs[:type] %>"
+                 value="<%= day[fs[:key]].to_s %>"
+                 <%= "disabled" if readonly %>>
+        </div>
+      <% end %>
+    </article>
+  <% end %>
+</div>

@@ -1,7 +1,94 @@
-/* ====== layout（preview.css を流用前提） ====== */
+/* ヘッダーコンポーネントの基本スタイル */
+* {
+  box-sizing: border-box;
+}
 
-/* ヘッダー: タイトル + メタ + アクション */
-.plan-header {
+.main-header {
+  background-color: #fff;
+  padding: 15px 25px;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  width: 100%;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-left, .header-right {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  
+
+}
+
+/* サービスロゴ */
+.service-logo {
+  font-size: 24px;
+  font-weight: 700;
+  color: #007bff;
+  text-decoration: none;
+}
+
+.service-logo:hover {
+  text-decoration: none;
+  color: #0056b3;
+}
+
+/* ヘッダーリンク */
+.header-link {
+  color: #555;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 20px;
+  transition: color 0.3s;
+  font-size: 15px;
+}
+
+.header-link:hover {
+  color: #007bff;
+}
+
+/* プラン作成ボタン */
+.header-link.plan-link {
+  background-color: #007bff;
+  color: #fff;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.header-link.plan-link:hover {
+  background-color: #0056b3;
+}
+
+/* 新規登録ボタン */
+.header-link.register-link {
+  background-color: #e0e0e0;
+  color: #555;
+  padding: 8px 15px;
+  border-radius: 5px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+}
+
+.header-link.register-link:hover {
+  background-color: #ccc;
+}
+
+.main-header + .travel-plans-show {
+  margin-top: clamp(16px, 2.5vw, 32px);  /* 画面幅に応じて 16〜32px */
+}
+
+/* タイトル + メタ + アクション */
+.travel-plans-show .plan-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -9,26 +96,26 @@
   margin-bottom: 24px;
 }
 
-.plan-header-left {
+.travel-plans-show .plan-header-left {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.plan-title {
+.travel-plans-show .plan-title {
   font-size: 28px;
   font-weight: 800;
   color: #007bff;
   margin: 0;
 }
 
-.plan-meta {
+.travel-plans-show .plan-meta {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.meta-badge {
+.travel-plans-show .meta-badge {
   display: inline-block;
   padding: 6px 10px;
   border-radius: 16px;
@@ -38,25 +125,25 @@
   border: 1px solid #e3ebf4;
 }
 
-.meta-place {
+.travel-plans-show .meta-place {
   background: #fff7ec;
   border-color: #ffe5c2;
 }
 
-.meta-purpose {
+.travel-plans-show .meta-purpose {
   background: #eefaf0;
   border-color: #c9efd1;
 }
 
 /* 右側アクション */
-.plan-header-right {
+.travel-plans-show .plan-header-right {
   display: flex;
   gap: 10px;
 }
 
 /* 編集・削除ボタン（プレビューのCTA系に合わせた質感） */
-.edit-plan-button,
-.delete-plan-button {
+.travel-plans-show .edit-plan-button,
+.travel-plans-show .delete-plan-button {
   display: inline-block;
   padding: 12px 22px;
   border-radius: 50px;
@@ -67,28 +154,28 @@
   border: none;
 }
 
-.edit-plan-button {
+.travel-plans-show .edit-plan-button {
   background-color: #007bff;
   color: #fff;
 }
 
-.edit-plan-button:hover {
+.travel-plans-show .edit-plan-button:hover {
   background-color: #0056b3;
   transform: translateY(-1px);
 }
 
-.delete-plan-button {
+.travel-plans-show .delete-plan-button {
   background-color: #dc3545;
   color: #fff;
 }
 
-.delete-plan-button:hover {
+.travel-plans-show .delete-plan-button:hover {
   background-color: #c82333;
   transform: translateY(-1px);
 }
 
 /* 空データのとき */
-.empty-state {
+.travel-plans-show .empty-state {
   text-align: center;
   background: #fff;
   border-radius: 12px;
@@ -96,7 +183,7 @@
   box-shadow: 0 4px 15px rgba(0,0,0,0.06);
 }
 
-.primary-cta {
+.travel-plans-show .primary-cta {
   display: inline-block;
   margin-top: 12px;
   background: #007bff;
@@ -108,18 +195,18 @@
   box-shadow: 0 4px 10px rgba(0,123,255,0.18);
 }
 
-.primary-cta:hover {
+.travel-plans-show .primary-cta:hover {
   background: #0056b3;
 }
 
 /* 旅程カード（preview.css と同じ雰囲気を維持） */
-.itinerary-container {
+.travel-plans-show .itinerary-container {
   display: flex;
   flex-direction: column;
   gap: 22px;
 }
 
-.itinerary-day-card {
+.travel-plans-show .itinerary-day-card {
   background-color: #fff;
   border-radius: 12px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.08);
@@ -127,12 +214,12 @@
   transition: transform 0.2s ease;
 }
 
-.itinerary-day-card:hover {
+.travel-plans-show .itinerary-day-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 22px rgba(0,0,0,0.12);
 }
 
-.day-title {
+.travel-plans-show .day-title {
   font-size: 20px;
   font-weight: 800;
   color: #2c3e50;
@@ -142,13 +229,13 @@
 }
 
 /* ラベル・本文の横並び */
-.activity-list {
+.travel-plans-show .activity-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.activity-list li {
+.travel-plans-show .activity-list li {
   display: grid;
   grid-template-columns: 90px 1fr;
   gap: 8px;
@@ -157,33 +244,43 @@
   border-bottom: 1px dashed #e9eef2;
 }
 
-.activity-list li:last-child {
+.travel-plans-show .activity-list li:last-child {
   border-bottom: none;
 }
 
-.activity-label {
+.travel-plans-show .activity-label {
   color: #007bff;
   font-weight: 700;
 }
 
-.activity-body {
+.travel-plans-show .activity-body {
   color: #333;
   line-height: 1.7;
 }
 
-/* 予約ボタン（preview.css の .reservation-link と同様のトーン） */
-.reservation-link {
-  font-size: 13px;
+/* 予約ボタン（横に広がらないように修正＆競合に強く） */
+.travel-plans-show .reservation-link {
+  display: inline-flex;        /* 安定したインライン表示 */
+  align-items: center;
+  width: auto !important;      /* width:100% を確実に打ち消す */
+  max-width: max-content;      /* 内容幅にフィット */
+  flex: 0 0 auto;              /* flex/grid 親でも伸びない */
+  align-self: flex-start;      /* gridセルでも左寄せ維持 */
+  white-space: nowrap;
+
+  font-size: 12px;
   color: #fff;
-  background-color: #ff6a00;
-  padding: 3px 10px;
-  border-radius: 16px;
+  background-color: #ff7a1a;
+  padding: 4px 10px;
+  border-radius: 999px;
   text-decoration: none;
-  font-weight: 700;
-  transition: background-color 0.2s ease;
+  font-weight: 800;
   margin-left: 8px;
+  box-shadow: 0 2px 8px rgba(255, 122, 26, 0.25);
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-.reservation-link:hover {
-  background-color: #e55c00;
+.travel-plans-show .reservation-link:hover {
+  background-color: #e86d13;
+  transform: translateY(-1px);
 }

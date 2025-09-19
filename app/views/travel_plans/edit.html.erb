@@ -1,63 +1,186 @@
-<%= render 'shared/header' %>
+<%# app/views/travel_plans/edit.html.erb %>
 
-<div class="split-screen-container">
-  <div class="split-panel right-panel">
-    <div class="form-card">
-      <h2 class="form-title">旅行の条件を編集</h2>
+<%# スタイルは preview.css を流用（編集用の見た目にも合います） %>
+<% content_for :head do %>
+  <%= stylesheet_link_tag "travel_plans/preview", media: "all", "data-turbo-track": "reload" %>
+<% end %>
 
-      <%= form_with(model: @travel_plan, local: true) do |f| %>
-        <div class="field">
-          <%= f.label :name, "プラン名" %><br />
-          <%= f.text_field :name, class: "form-input", placeholder: "例：京都の紅葉を満喫する旅" %>
-        </div>
-        
-        <div class="field">
-          <%= f.label :destination_ids, "行き先（複数選択可）" %><br />
+<%= render "shared/header" %>
 
-          <div data-controller="destination-filter">
-            <select data-destination-filter-target="groupSelect" data-action="change->destination-filter#update" class="form-input">
-              <option value="">地方を選択してください</option>
-              <% @prefecture_groups.each do |group| %>
-                <option value="<%= group.id %>"><%= group.name %></option>
-              <% end %>
-            </select>
-
-            <div id="destination-checkboxes">
-              <% @destinations.each do |destination| %>
-                <div data-destination-filter-target="destination" data-prefecture-group="<%= destination.prefecture_group_id %>">
-                  <%= f.check_box :destination_ids, { multiple: true, checked: @travel_plan.destination_ids.include?(destination.id) }, destination.id, nil %>
-                  <%= destination.name %>
-                </div>
-              <% end %>
-            </div>
-          </div>
-        </div>
-
-        <div class="field">
-          <%= f.label :start_date, "開始日" %><br />
-          <%= f.date_field :start_date, class: "form-input" %>
-        </div>
-
-        <div class="field">
-          <%= f.label :end_date, "終了日" %><br />
-          <%= f.date_field :end_date, class: "form-input" %>
-        </div>
-
-        <div class="field">
-          <%= f.label :budget, "総予算（目安）" %><br />
-          <%= f.number_field :budget, class: "form-input", placeholder: "例：50000" %>
-        </div>
-
-        <div class="field">
-          <%= f.label :notes, "その他ニーズ（AIに伝えたいこと）" %><br />
-          <%= f.text_area :notes, class: "form-textarea", placeholder: "例：温泉宿に泊まりたい、歴史的な場所を巡りたい" %>
-        </div>
-
-        <div class="actions form-actions-edit">
-          <%= f.submit "更新する", class: "form-submit-button" %>
-          <%= link_to "戻る", travel_plan_path(@travel_plan), class: "back-button" %>
-        </div>
-      <% end %>
+<div class="page-container">
+  <header class="plan-header">
+    <div class="plan-header-left">
+      <h2 class="plan-title">プランを編集</h2>
+      <div class="plan-meta">
+        <span class="meta-badge">プランID: <%= @travel_plan.id %></span>
+        <% if @travel_plan.start_date.present? && @travel_plan.end_date.present? %>
+          <span class="meta-badge"><%= @travel_plan.start_date %> 〜 <%= @travel_plan.end_date %></span>
+        <% end %>
+        <% if @travel_plan.destinations&.any? %>
+          <span class="meta-badge meta-place"><%= @travel_plan.destinations.pluck(:name).join("・") %></span>
+        <% end %>
+      </div>
     </div>
-  </div>
+    <div class="plan-header-right">
+      <%= link_to "プラン詳細へ戻る", travel_plan_path(@travel_plan), class: "preview-back-button" %>
+    </div>
+  </header>
+
+  <%= form_with model: @travel_plan, url: travel_plan_path(@travel_plan), method: :patch, local: true, data: { turbo: false }, id: "edit-plan-form" do |f| %>
+    <%# ------- プラン基本情報 ------- %>
+    <article class="itinerary-day-card" style="margin-bottom: 18px;">
+      <h3 class="day-title">基本情報</h3>
+
+      <ul class="activity-list">
+        <li>
+          <span class="activity-label">プラン名</span>
+          <span class="activity-body">
+            <%= f.text_field :name, class: "itinerary-field", placeholder: "例: 家族で〇〇温泉 1泊2日プラン" %>
+          </span>
+        </li>
+
+        <li>
+          <span class="activity-label">目的</span>
+          <span class="activity-body">
+            <%= f.collection_select :travel_purpose_id, @travel_purposes, :id, :name, { include_blank: "選択してください" }, class: "itinerary-field" %>
+          </span>
+        </li>
+
+        <li>
+          <span class="activity-label">期間</span>
+          <span class="activity-body" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <%= f.date_field :start_date, class: "itinerary-field" %>
+            <%= f.date_field :end_date,   class: "itinerary-field" %>
+          </span>
+        </li>
+
+        <li>
+          <span class="activity-label">予算</span>
+          <span class="activity-body">
+            <%= f.number_field :budget, class: "itinerary-field", placeholder: "例: 100000" %>
+          </span>
+        </li>
+
+        <li>
+          <span class="activity-label">メモ</span>
+          <span class="activity-body">
+            <%= f.text_area :notes, class: "itinerary-field", rows: 3, placeholder: "例: 子ども1名 / 移動は車 など" %>
+          </span>
+        </li>
+      </ul>
+    </article>
+
+    <%# ------- 日程編集 ------- %>
+    <section class="itinerary-container" id="itinerary-editor">
+      <% Array(@travel_plan.itinerary).each_with_index do |day, i| %>
+        <article class="itinerary-day-card itinerary-day" data-index="<%= i %>">
+          <h3 class="day-title">
+            Day
+            <input type="number" class="itinerary-field small-number js-day" value="<%= day["day"] %>" min="1" />
+            ／ <input type="date" class="itinerary-field js-date" value="<%= day["date"] %>" style="width:auto;" />
+          </h3>
+
+          <ul class="activity-list">
+            <li>
+              <span class="activity-label">場所</span>
+              <span class="activity-body">
+                <input type="text" class="itinerary-field js-place" value="<%= day["place"] %>" placeholder="例: 伊香保温泉エリア" />
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">朝食</span>
+              <span class="activity-body">
+                <input type="text" class="itinerary-field js-breakfast-name" value="<%= day["breakfast_restaurant"] %>" placeholder="例: ホテル朝食 or 店名" />
+                <input type="url"  class="itinerary-field js-breakfast-url"  value="<%= day["breakfast_restaurant_url"] %>" placeholder="URL（任意）" />
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">午前</span>
+              <span class="activity-body">
+                <textarea class="itinerary-field js-morning" rows="2" placeholder="午前の活動"><%= day["morning_activity"] %></textarea>
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">昼食</span>
+              <span class="activity-body">
+                <input type="text" class="itinerary-field js-lunch-name" value="<%= day["lunch_restaurant"] %>" placeholder="店名（必須）" />
+                <input type="url"  class="itinerary-field js-lunch-url"  value="<%= day["lunch_restaurant_url"] %>" placeholder="tabelog.com の店舗URL（必須）" />
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">午後</span>
+              <span class="activity-body">
+                <textarea class="itinerary-field js-afternoon" rows="2" placeholder="午後の活動"><%= day["afternoon_activity"] %></textarea>
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">夕食</span>
+              <span class="activity-body">
+                <input type="text" class="itinerary-field js-dinner-name" value="<%= day["dinner_restaurant"] %>" placeholder="店名（必須）" />
+                <input type="url"  class="itinerary-field js-dinner-url"  value="<%= day["dinner_restaurant_url"] %>" placeholder="tabelog.com の店舗URL（必須）" />
+              </span>
+            </li>
+
+            <li>
+              <span class="activity-label">宿泊</span>
+              <span class="activity-body">
+                <input type="text" class="itinerary-field js-hotel-name" value="<%= day["stay_hotel"] %>" placeholder="ホテル名（最終日は原則空）" />
+                <input type="url"  class="itinerary-field js-hotel-url"  value="<%= day["stay_hotel_url"] %>" placeholder="ホテル公式URL（任意）" />
+              </span>
+            </li>
+          </ul>
+        </article>
+      <% end %>
+    </section>
+
+    <%# 送信用の hidden。JS で JSON を詰める %>
+    <%= hidden_field_tag :itinerary_json, "", id: "itinerary_json" %>
+
+    <div class="plan-actions" style="display:flex; gap:10px; justify-content:center;">
+      <%= link_to "キャンセル", travel_plan_path(@travel_plan), class: "preview-back-button" %>
+      <%= f.submit "この内容で更新する", class: "plan-decide-button" %>
+    </div>
+  <% end %>
 </div>
+
+<script>
+  (function() {
+    function serializeItinerary() {
+      const cards = document.querySelectorAll('.itinerary-day-card.itinerary-day');
+      const days = [];
+      cards.forEach(function(card, idx) {
+        const get = sel => (card.querySelector(sel) || {}).value || "";
+
+        const dayObj = {
+          day:                       parseInt(get('.js-day')) || (idx + 1),
+          date:                      get('.js-date'),
+          place:                     get('.js-place'),
+          breakfast_restaurant:      get('.js-breakfast-name'),
+          breakfast_restaurant_url:  get('.js-breakfast-url'),
+          morning_activity:          get('.js-morning'),
+          lunch_restaurant:          get('.js-lunch-name'),
+          lunch_restaurant_url:      get('.js-lunch-url'),
+          afternoon_activity:        get('.js-afternoon'),
+          dinner_restaurant:         get('.js-dinner-name'),
+          dinner_restaurant_url:     get('.js-dinner-url'),
+          stay_hotel:                get('.js-hotel-name'),
+          stay_hotel_url:            get('.js-hotel-url')
+        };
+
+        days.push(dayObj);
+      });
+      return JSON.stringify(days);
+    }
+
+    const form = document.getElementById('edit-plan-form');
+    form.addEventListener('submit', function(e) {
+      // 送信直前にJSONへ詰め直し
+      document.getElementById('itinerary_json').value = serializeItinerary();
+    }, false);
+  })();
+</script>

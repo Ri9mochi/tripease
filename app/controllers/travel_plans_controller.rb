@@ -5,11 +5,15 @@ require 'net/http'
 require 'uri'
 
 class TravelPlansController < ApplicationController
-  # devise を使っているはずなので必要なら有効化
+  # 必要に応じてコメントアウトを外す
   # before_action :authenticate_user!
 
+  # ★ 追加: show だけ専用レイアウトを使う
+  layout :resolve_layout  # ★ 追加
+
+  # ===== CRUD =====
   def index
-    @travel_plans = current_user.travel_plans.includes(:travel_purpose) # 目的名のN+1回避
+    @travel_plans = current_user.travel_plans.includes(:travel_purpose)
   end
 
   def new
@@ -32,8 +36,8 @@ class TravelPlansController < ApplicationController
         itinerary:  JSON.parse(itinerary_data)
       )
       @travel_plan.travel_purpose_id = tp[:travel_purpose_id] if tp[:travel_purpose_id].present?
-      @travel_plan.budget            = tp[:budget]             if tp[:budget].present?
-      @travel_plan.notes             = tp[:notes]              if tp[:notes].present?
+      @travel_plan.budget            = tp[:budget]            if tp[:budget].present?
+      @travel_plan.notes             = tp[:notes]             if tp[:notes].present?
     else
       @travel_plan = current_user.travel_plans.build(travel_plan_params)
     end
@@ -41,16 +45,14 @@ class TravelPlansController < ApplicationController
     if @travel_plan.save
       redirect_to authenticated_root_path, notice: '旅行プランがマイプランに保存されました。'
     else
-      # 失敗理由をログ & 画面表示
       Rails.logger.warn("TravelPlan save failed: #{@travel_plan.errors.full_messages.join(', ')}")
       flash.now[:alert] = @travel_plan.errors.full_messages.join('<br>')
-
       @prefecture_groups = PrefectureGroup.all
       @destinations      = Destination.order(:name)
       @travel_purposes   = TravelPurpose.order(:position, :id)
       render :new, status: :unprocessable_entity
     end
-end
+  end
 
   def show
     @travel_plan = TravelPlan.find(params[:id])
@@ -63,14 +65,40 @@ end
     @travel_purposes   = TravelPurpose.order(:position, :id)
   end
 
+  # ▼ 編集保存：itinerary_json を受理し、簡易検証のうえ保存
   def update
     @travel_plan = TravelPlan.find(params[:id])
-    if @travel_plan.update(travel_plan_params)
+    @travel_plan.assign_attributes(travel_plan_params)
+
+    if params[:itinerary_json].present?
+      begin
+        new_itinerary = JSON.parse(params[:itinerary_json])
+        unless new_itinerary.is_a?(Array)
+          flash.now[:alert] = "旅程データの形式が不正です。"
+          hydrate_collections_for_edit and return render(:edit, status: :unprocessable_entity)
+        end
+
+        # 食べログURLの最低限検証（昼/夜のみ必須）
+        pseudo_plans = [{ "plan_name" => @travel_plan.name, "itinerary" => new_itinerary }]
+        issues = collect_meal_issues(pseudo_plans)
+        if issues.any?
+          Rails.logger.warn("Update validation failed: #{issues.inspect}")
+          flash.now[:alert] = "レストランURLの検証に失敗しました。URLや店舗を見直してください。"
+          @itinerary_preview = new_itinerary
+          hydrate_collections_for_edit and return render(:edit, status: :unprocessable_entity)
+        end
+
+        @travel_plan.itinerary = new_itinerary
+      rescue JSON::ParserError
+        flash.now[:alert] = "旅程データの読み込みに失敗しました。"
+        hydrate_collections_for_edit and return render(:edit, status: :unprocessable_entity)
+      end
+    end
+
+    if @travel_plan.save
       redirect_to @travel_plan, notice: '旅行プランが更新されました。'
     else
-      @prefecture_groups = PrefectureGroup.all
-      @destinations      = Destination.order(:name)
-      @travel_purposes   = TravelPurpose.order(:position, :id)
+      hydrate_collections_for_edit
       render :edit, status: :unprocessable_entity
     end
   end
@@ -81,17 +109,17 @@ end
     redirect_to authenticated_root_path, notice: '旅行プランを削除しました。'
   end
 
+  # ===== AI 生成 → プレビュー =====
   def generate_ai
-    tp_params         = params.dig(:travel_plan) || {}
-    destination_ids   = Array(tp_params[:destination_ids]).compact_blank
+    tp_params          = params.dig(:travel_plan) || {}
+    destination_ids    = Array(tp_params[:destination_ids]).compact_blank
     destinations_names = Destination.where(id: destination_ids).pluck(:name).join(', ')
-    start_date        = tp_params[:start_date]
-    end_date          = tp_params[:end_date]
-    budget            = tp_params[:budget]
-    notes             = tp_params[:notes]
-    purpose_name      = TravelPurpose.find_by(id: tp_params[:travel_purpose_id])&.name
+    start_date         = tp_params[:start_date]
+    end_date           = tp_params[:end_date]
+    budget             = tp_params[:budget]
+    notes              = tp_params[:notes]
+    purpose_name       = TravelPurpose.find_by(id: tp_params[:travel_purpose_id])&.name
 
-    # 期間（日数）
     num_days =
       if start_date.present? && end_date.present?
         (Date.parse(end_date) - Date.parse(start_date)).to_i + 1
@@ -105,12 +133,9 @@ end
 
     begin
       @ai_plans = call_gemini_api(prompt_text)
-
-      # ▼ 追加：正規化・検証
       @ai_plans = normalize_ai_plans(@ai_plans)
 
-      cache_key = "ai_plans_for_user_#{current_user.id}"
-      Rails.cache.write(cache_key, @ai_plans, expires_in: 1.hour)
+      Rails.cache.write("ai_plans_for_user_#{current_user.id}", @ai_plans, expires_in: 1.hour)
 
       respond_to do |format|
         format.js { render 'generate_ai' }
@@ -121,127 +146,8 @@ end
     end
   end
 
-  def normalize_ai_plans(plans)
-    return [] unless plans.is_a?(Array)
-
-    plans.map do |plan|
-      plan = plan.deep_dup
-      it = plan["itinerary"]
-      if it.is_a?(Array)
-        it.each do |day|
-          # 1) レストランURL検証＆店名整合
-          %w[lunch dinner].each do |meal|
-            name_key = "#{meal}_restaurant"
-            url_key  = "#{meal}_restaurant_url"
-            fixed = sanitize_tabelog_pair(day[name_key], day[url_key])
-            day[name_key] = fixed[:name]
-            day[url_key]  = fixed[:url]
-          end
-
-          # 2) 朝食（breakfast）検証＆補完
-          b_fixed = sanitize_any_pair(day["breakfast_restaurant"], day["breakfast_restaurant_url"])
-          day["breakfast_restaurant"]     = b_fixed[:name]
-          day["breakfast_restaurant_url"] = b_fixed[:url]
-
-          if day["breakfast_restaurant"].blank?
-            if day["stay_hotel"].present?
-              day["breakfast_restaurant"]     = "ホテル朝食（#{day['stay_hotel']}）"
-              day["breakfast_restaurant_url"] = day["stay_hotel_url"].to_s
-            else
-              day["breakfast_restaurant"]     = "朝食"
-              day["breakfast_restaurant_url"] = ""
-            end
-          end
-        end
-      end
-      plan
-    end
-  end
-
-  # --- tabelog専用：URL正当性と店名の整合を保証 ---
-  def sanitize_tabelog_pair(name, url)
-    url = url.to_s.strip
-    name = name.to_s.strip
-
-    return { name: name, url: "" } if url.blank?
-
-    uri = (URI.parse(url) rescue nil)
-    return { name: name, url: "" } unless uri&.host&.end_with?("tabelog.com")
-
-    return { name: name, url: "" } unless http_ok?(uri)
-
-    # タイトルから店舗名を抽出して、名前を上書き（表示とURLを一致させる）
-    title = fetch_title(uri)
-    store = extract_tabelog_store_name(title)
-    display_name = store.presence || name
-
-    { name: display_name, url: url }
-  rescue
-    { name: name.to_s, url: "" }
-  end
-
-  # --- 任意ドメイン用：存在確認だけ（200でなければ空文字） ---
-  def sanitize_any_pair(name, url)
-    url = url.to_s.strip
-    name = name.to_s.strip
-    return { name: name, url: "" } if url.blank?
-
-    uri = (URI.parse(url) rescue nil)
-    return { name: name, url: "" } unless uri && %w(http https).include?(uri.scheme)
-    return { name: name, url: "" } unless http_ok?(uri)
-
-    { name: name, url: url }
-  rescue
-    { name: name.to_s, url: "" }
-  end
-
-  def http_ok?(uri)
-    conn = Faraday.new(url: "#{uri.scheme}://#{uri.host}") do |f|
-      f.options.timeout = 3
-      f.options.open_timeout = 3
-    end
-    path = uri.request_uri.presence || "/"
-
-    head = (conn.head(path) rescue nil)
-    return true if head && head.status.to_i == 200
-
-    get = (conn.get(path) rescue nil)
-    get && get.status.to_i == 200
-  end
-
-  def fetch_title(uri)
-    conn = Faraday.new(url: "#{uri.scheme}://#{uri.host}") do |f|
-      f.options.timeout = 3
-      f.options.open_timeout = 3
-    end
-    res = conn.get(uri.request_uri.presence || "/") rescue nil
-    return "" unless res && res.status.to_i == 200
-
-    html = res.body.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
-    html[/\<title\>(.*?)\<\/title\>/im, 1].to_s.strip
-  end
-
-  # ざっくりタイトルから店名を抜く（例: "政寿司 本店 - 食べログ" / "政寿司 本店｜食べログ"）
-  def extract_tabelog_store_name(title)
-    return "" if title.blank?
-    t = title.dup
-
-    # 「 - 食べログ」より前 / 「｜食べログ」より前 を優先
-    if t.include?(" - 食べログ")
-      return t.split(" - 食べログ").first.strip
-    end
-    if t.include?("｜食べログ")
-      return t.split("｜食べログ").first.strip
-    end
-
-    # 保険：末尾の「食べログ」を除去
-    t.sub(/食べログ\s*$/,'').strip
-  end
-
   def preview
-    cache_key = "ai_plans_for_user_#{current_user.id}"
-    @ai_plans = Rails.cache.read(cache_key)
-
+    @ai_plans = Rails.cache.read("ai_plans_for_user_#{current_user.id}")
     unless @ai_plans.present?
       flash[:error] = "プランデータが見つかりませんでした。もう一度プランを作成してください。"
       redirect_to new_travel_plan_path and return
@@ -258,6 +164,13 @@ end
 
   private
 
+  # ★ 追加: アクションごとにレイアウト切り替え
+  def resolve_layout
+    # show だけ application を使わず、専用レイアウトを適用
+    action_name == "show" ? "travel_plans_show" : "application"
+  end
+
+  # ===== Strong Params =====
   def travel_plan_params
     params.require(:travel_plan).permit(
       :name, :start_date, :end_date, :budget, :notes, :status,
@@ -266,10 +179,137 @@ end
     )
   end
 
-  # --- ここからAI呼び出し＆堅牢パーサ ---
+  def hydrate_collections_for_edit
+    @prefecture_groups = PrefectureGroup.all
+    @destinations      = Destination.order(:name)
+    @travel_purposes   = TravelPurpose.order(:position, :id)
+  end
+
+  # ====== 旅程正規化（AI応答後の整備） ======
+  def normalize_ai_plans(plans)
+    return [] unless plans.is_a?(Array)
+
+    plans.map do |plan|
+      plan = plan.deep_dup
+      it = plan["itinerary"]
+
+      if it.is_a?(Array)
+        it.each do |day|
+          %w[lunch dinner].each do |meal|
+            name_key = "#{meal}_restaurant"
+            url_key  = "#{meal}_restaurant_url"
+            fixed    = sanitize_tabelog_pair(day[name_key], day[url_key])
+            day[name_key] = fixed[:name]
+            day[url_key]  = fixed[:url]
+          end
+
+          b_fixed = sanitize_any_pair(day["breakfast_restaurant"], day["breakfast_restaurant_url"])
+          day["breakfast_restaurant"]     = b_fixed[:name]
+          day["breakfast_restaurant_url"] = b_fixed[:url]
+
+          if day["breakfast_restaurant"].blank?
+            if day["stay_hotel"].present?
+              day["breakfast_restaurant"]     = "ホテル朝食（#{day['stay_hotel']}）"
+              day["breakfast_restaurant_url"] = day["stay_hotel_url"].to_s
+            else
+              day["breakfast_restaurant"]     = "ホテル朝食"
+              day["breakfast_restaurant_url"] = ""
+            end
+          end
+        end
+      end
+
+      plan
+    end
+  end
+
+  # ====== 昼/夜レストランURLの検証（編集保存時も使う） ======
+  def collect_meal_issues(plans)
+    issues = []
+    Array(plans).each_with_index do |plan, pi|
+      Array(plan["itinerary"]).each_with_index do |day, di|
+        %w[lunch dinner].each do |meal|
+          url = day["#{meal}_restaurant_url"].to_s.strip
+          name = day["#{meal}_restaurant"].to_s.strip
+          valid =
+            url.present? &&
+            (u = (URI.parse(url) rescue nil)) &&
+            u&.host&.end_with?("tabelog.com") 
+            http_ok?(u)
+          issues << { plan_idx: pi, day_idx: di, meal: meal, name: name, url: url, reason: (url.blank? ? "missing_url" : "invalid_or_unreachable") } unless valid
+        end
+      end
+    end
+    issues
+  end
+
+  # ====== URLサニタイズ系 ======
+  def sanitize_tabelog_pair(name, url)
+    url  = url.to_s.strip
+    name = name.to_s.strip
+    return { name: name, url: "" } if url.blank?
+
+    uri = (URI.parse(url) rescue nil)
+    return { name: name, url: "" } unless uri&.host&.end_with?("tabelog.com")
+    return { name: name, url: "" } unless http_ok?(uri)
+
+    title = fetch_title(uri)
+    store = extract_tabelog_store_name(title)
+    { name: (store.presence || name), url: url }
+  rescue
+    { name: name, url: "" }
+  end
+
+  def sanitize_any_pair(name, url)
+    url  = url.to_s.strip
+    name = name.to_s.strip
+    return { name: name, url: "" } if url.blank?
+
+    uri = (URI.parse(url) rescue nil)
+    return { name: name, url: "" } unless uri && %w(http https).include?(uri.scheme)
+    return { name: name, url: "" } unless http_ok?(uri)
+
+    { name: name, url: url }
+  rescue
+    { name: name, url: "" }
+  end
+
+  def http_ok?(uri)
+    conn = Faraday.new(url: "#{uri.scheme}://#{uri.host}") do |f|
+      f.options.timeout      = 3
+      f.options.open_timeout = 3
+    end
+    path = uri.request_uri.presence || "/"
+
+    head = (conn.head(path) rescue nil)
+    return true if head && head.status.to_i.between?(200, 299)
+
+    get = (conn.get(path) rescue nil)
+    get && get.status.to_i.between?(200, 299)
+  end
+
+  def fetch_title(uri)
+    conn = Faraday.new(url: "#{uri.scheme}://#{uri.host}") do |f|
+      f.options.timeout      = 3
+      f.options.open_timeout = 3
+    end
+    res = (conn.get(uri.request_uri.presence || "/") rescue nil)
+    return "" unless res && res.status.to_i.between?(200, 299)
+
+    html = res.body.to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
+    html[/\<title\>(.*?)\<\/title\>/im, 1].to_s.strip
+  end
+
+  def extract_tabelog_store_name(title)
+    return "" if title.blank?
+    return title.split(" - 食べログ").first.strip if title.include?(" - 食べログ")
+    return title.split("｜食べログ").first.strip  if title.include?("｜食べログ")
+    title.sub(/食べログ\s*$/, '').strip
+  end
+
+  # ===== Gemini 呼び出し & 解析 =====
   def call_gemini_api(prompt_text)
     Rails.logger.debug("--- AI API呼び出し開始 ---")
-
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
 
     conn = Faraday.new(url: url) do |f|
@@ -282,8 +322,8 @@ end
         { role: "user", parts: [ { text: prompt_text } ] }
       ],
       generationConfig: {
-        response_mime_type: "application/json", # JSONのみを期待
-        temperature: 0.2,   # ← 低めで安定化（0.0〜0.3あたり）
+        response_mime_type: "application/json",
+        temperature: 0.2,
         topP: 0.5,
         topK: 40
       }
@@ -297,6 +337,11 @@ end
 
     Rails.logger.debug("Gemini raw response: #{response.body.inspect}")
 
+    if response.body.is_a?(Hash) && response.body["error"]
+      Rails.logger.warn("Gemini error: #{response.body['error'].inspect}")
+      return []
+    end
+
     json_text = response.body.dig("candidates", 0, "content", "parts", 0, "text")
     parse_ai_json(json_text)
   rescue => e
@@ -304,38 +349,26 @@ end
     []
   end
 
-  # 余計な前後テキストが混じってもJSONだけ抜き出してパース
   def parse_ai_json(json_text)
     return [] if json_text.blank?
-
     text = json_text.to_s.strip
 
-    # ```json ... ``` の囲いがあれば中身優先
     if (m = text.match(/```json\s*([\s\S]*?)```/i))
       text = m[1].to_s.strip
     end
 
-    # 先頭の [ 〜 最後の ] を抽出してパース（混在テキスト対策）
     if text.include?('[') && text.include?(']')
       start  = text.index('[')
       finish = text.rindex(']')
       candidate = text[start..finish] rescue nil
-      if candidate
-        begin
-          return JSON.parse(candidate)
-        rescue JSON::ParserError
-          # 続けて最後の手段へ
-        end
-      end
+      return JSON.parse(candidate) if candidate
     end
 
-    # 最後の手段：そのままパース
     JSON.parse(text)
   rescue JSON::ParserError => e
     Rails.logger.error("Gemini APIの応答がJSONとして解析できません: #{e.message}")
     []
   end
-  # --- ここまで ---
 
   def generate_prompt(destinations_names, start_date, end_date, budget, notes, num_days, purpose_name)
     <<~PROMPT
@@ -353,13 +386,13 @@ end
               "date": "YYYY-MM-DD",
               "place": "行き先の地名",
               "breakfast_restaurant": "朝食の店名（例: ホテル朝食）",
-              "breakfast_restaurant_url": "朝食のURL（ホテル公式/食べログ等。朝食が不要な場合は空文字）",
+              "breakfast_restaurant_url": "朝食のURL（空文字可）",
               "morning_activity": "午前の活動内容",
               "lunch_restaurant": "昼食の店名",
-              "lunch_restaurant_url": "昼食の予約URL（例: 食べログ）",
+              "lunch_restaurant_url": "tabelog.com の店舗ページURL（必須）",
               "afternoon_activity": "午後の活動内容",
               "dinner_restaurant": "夕食の店名",
-              "dinner_restaurant_url": "夕食の予約URL（例: 食べログ）",
+              "dinner_restaurant_url": "tabelog.com の店舗ページURL（必須）",
               "stay_hotel": "宿泊ホテルの具体的な名前",
               "stay_hotel_url": "宿泊ホテルの予約URL（例:公式HP）"
             }
@@ -368,20 +401,18 @@ end
       ]
 
       **追加の要望（厳守）:**
-      - レストランURLは **tabelog.com** の店舗ページのみを入れてください。
-      - 確実にアクセスができるURLを入れること。
-      - 提示したレストラン名とURLは確実に一致させること。
-      - 架空の店名や存在しないURLは生成しないでください。
-      - ホテルURLは公式HPのURLを入れること。
+      - レストランURLは **tabelog.com の店舗ページ**のみ。
+      - 店名とURLは同一店舗に一致させること。
+      - 200で到達可能なURLのみ。
+      - 架空の店や無効URLは出力しないこと。
 
       **出力規約（重要）**
-      - 回答は **JSON配列のみ** をそのまま出力すること。
-      - コードブロック（```）や注記、見出し、説明文は一切付加しないこと。
+      - 回答は **JSON配列のみ** をそのまま出力すること。コードブロックや注記は一切不要。
 
       **ユーザーの旅行情報:**
       - 旅行目的: #{purpose_name.presence || "（未指定）"}
       - 行き先: #{destinations_names.presence || "（未指定）"}
-      - 期間: #{start_date.presence || "未定"} 〜 #{end_date.presence || "未定"}（#{num_days}日間想定）
+      - 期間: #{start_date.presence || "未定"} 〜 #{end_date.presence || "未定"}（#{num_days}日間）
       - 総予算: #{budget.presence || "未設定"} 円
       - その他ニーズ: #{notes.presence || "特になし"}
     PROMPT

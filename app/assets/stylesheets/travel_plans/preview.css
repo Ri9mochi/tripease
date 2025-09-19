@@ -31,9 +31,8 @@
   font-weight: 800;
   letter-spacing: 0.2px;
   line-height: 1.25;
-  color: #ffffff !important;                 /* ← 白で固定 */
-  text-shadow: 0 2px 8px rgba(0,0,0,.25),    /* 影で可読性UP */
-               0 0 1px rgba(255,255,255,.08);
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,.25), 0 0 1px rgba(255,255,255,.08);
 }
 
 .plan-meta {
@@ -62,6 +61,7 @@
 .plan-header-right {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 /* ====== Back Button ====== */
@@ -112,6 +112,10 @@
   padding-bottom: 10px;
   margin: 0 0 10px;
   border-bottom: 2px solid #eef3fa;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Activity List */
@@ -145,9 +149,48 @@
   color: #1d2a36;
   font-size: 15px;
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* Reservation Link */
+/* ====== Editable Fields ====== */
+.itinerary-field {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #cfd9e6;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.itinerary-field:focus {
+  outline: none;
+  border-color: #0a61ff;
+  box-shadow: 0 0 0 3px rgba(10, 97, 255, 0.15);
+}
+
+.itinerary-field[readonly] {
+  background-color: #f9fbfd;
+  color: #555;
+}
+
+textarea.itinerary-field {
+  resize: vertical;
+  min-height: 64px;
+  line-height: 1.5;
+}
+
+/* 小さい数字入力 (Day番号) */
+.small-number {
+  width: 70px;
+  text-align: center;
+  padding: 6px 8px;
+}
+
+/* ====== Reservation Link ====== */
 .reservation-link {
   display: inline-block;
   font-size: 12px;
