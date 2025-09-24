@@ -79,3 +79,7 @@ gem "json"
 
 
 gem 'dotenv-rails', groups: [:development, :test]
+
+gem 'faraday-follow_redirects'
+gem 'faraday-retry'
+gem 'nokogiri'

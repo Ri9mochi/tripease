@@ -23,6 +23,23 @@
             html: { id: "ai-form" }
           ) do |f| %>
 
+        <!-- ====== バリデーションモード（STRICT/RELAXED）トグル ====== -->
+        <div class="field">
+          <label class="toggle-label" for="strict-mode-toggle" style="display:flex;align-items:center;gap:12px;">
+            <span>厳格チェック（閉店/URLの厳格バリデーション）</span>
+            <input type="checkbox" id="strict-mode-toggle" checked style="width:42px;height:22px;accent-color:#0ea5e9;cursor:pointer;" />
+            <span id="strict-mode-status" style="font-size:12px;color:#64748b;">ON（厳格）</span>
+          </label>
+          <div class="help-text" style="font-size:12px;color:#64748b;margin-top:4px;line-height:1.5;">
+            ON: 昼/夜の両方について「tabelog 店舗詳細URL ＆ 到達OK ＆ 閉店ワードなし」を満たさないと採用しません。<br>
+            OFF: 昼/夜のどちらか一方でも基準を満たせば採用（まずはプランを出したい時の救済用）。
+          </div>
+          <!-- この hidden がコントローラへ送られる。strict / relaxed -->
+          <%= hidden_field_tag :validation_mode, "strict", id: "validation-mode" %>
+        </div>
+
+        <hr style="margin:16px 0;border:none;border-top:1px solid #e5e7eb;" />
+
         <div class="field">
           <%= f.label :travel_purpose_id, "旅行の目的" %><br />
           <%= f.collection_select :travel_purpose_id,
@@ -34,7 +51,7 @@
         <div class="field">
           <%= f.label :destination_ids, "行き先（複数選択可）" %><br />
 
-           <!-- 地方の選択 -->
+          <!-- 地方の選択 -->
           <select data-group-select class="form-input">
             <option value="">地方を選択してください</option>
             <% @prefecture_groups.each do |group| %>
@@ -73,11 +90,64 @@
           <%= f.text_area :notes, class: "form-textarea", placeholder: "例：家族3名、温泉宿に泊まりたい、歴史的な場所を巡りたい" %>
         </div>
 
-        <div class="actions">
+        <div class="actions" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
           <%= f.submit "AIにプランを作成してもらう", class: "form-submit-button" %>
+          <span id="mode-badge" style="font-size:12px;padding:4px 8px;border-radius:6px;background:#e2e8f0;color:#334155;">
+            送信モード: STRICT
+          </span>
         </div>
 
       <% end %>
     </div>
   </div>
 </div>
+
+<!-- ===== JS：トグルと地方→都道府県フィルタ ===== -->
+<script>
+  (function() {
+    // --- 厳格チェックトグル ---
+    const toggle = document.getElementById('strict-mode-toggle');
+    const modeInput = document.getElementById('validation-mode');
+    const status = document.getElementById('strict-mode-status');
+    const badge = document.getElementById('mode-badge');
+    const LS_KEY = 'tp.validation_mode';
+
+    function apply(mode) {
+      const strict = (mode !== 'relaxed'); // default strict
+      toggle.checked = strict;
+      modeInput.value = strict ? 'strict' : 'relaxed';
+      status.textContent = strict ? 'ON（厳格）' : 'OFF（柔軟）';
+      if (badge) {
+        badge.textContent = '送信モード: ' + (strict ? 'STRICT' : 'RELAXED');
+      }
+    }
+
+    // 初期化（localStorageを優先）
+    try {
+      const saved = localStorage.getItem(LS_KEY);
+      apply(saved || 'strict');
+    } catch(e) {
+      apply('strict');
+    }
+
+    toggle.addEventListener('change', function() {
+      const mode = this.checked ? 'strict' : 'relaxed';
+      apply(mode);
+      try { localStorage.setItem(LS_KEY, mode); } catch(e) {}
+    });
+
+    // --- 地方セレクトに応じて都道府県チェックを絞り込み ---
+    const groupSelect = document.querySelector('select[data-group-select]');
+    const container = document.getElementById('destination-checkboxes');
+    if (groupSelect && container) {
+      groupSelect.addEventListener('change', function() {
+        const gid = this.value;
+        const items = container.querySelectorAll('.destination-item');
+        items.forEach(function(el) {
+          const match = !gid || el.getAttribute('data-prefecture-group') === gid;
+          el.style.display = match ? '' : 'none';
+        });
+      });
+    }
+  })();
+</script>
